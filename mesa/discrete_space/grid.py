@@ -142,15 +142,15 @@ class Grid(DiscreteSpace[T], HasPropertyLayers):
         if self.capacity is not None and not isinstance(self.capacity, float | int):
             raise ValueError("Capacity must be a number or None.")
 
-    def select_random_empty_cell(self) -> T:  # noqa
+    def select_random_empty_cell(self) -> T:
         """Select a random empty cell using adaptive strategy based on grid density.
-        
+
         Uses vectorized approach for dense grids (>= 70% fill) and random sampling
         for sparse grids (< 70% fill) for optimal performance.
-        
+
         Returns:
             A randomly selected empty cell
-            
+
         Raises:
                 IndexError: If no empty cells are available
         """
@@ -158,7 +158,7 @@ class Grid(DiscreteSpace[T], HasPropertyLayers):
         total_cells = len(self._cells)
         empty_count = len(self.empties)
         fill_ratio = (total_cells - empty_count) / total_cells
-        
+
         # Use vectorized approach for dense grids or when random sampling is disabled
         if fill_ratio >= 0.7 or not self._try_random:
             empty_coords = np.argwhere(self.empty.data)
@@ -166,13 +166,13 @@ class Grid(DiscreteSpace[T], HasPropertyLayers):
                 raise IndexError("No empty cells available in grid")
             random_coord = self.random.choice(empty_coords)
             return self._cells[tuple(random_coord)]
-        
+
         # Use random sampling for sparse grids
         for _ in range(50):
             cell = self.all_cells.select_random_cell()
             if cell.is_empty:
                 return cell
-        
+
         # Fallback to vectorized if sampling fails
         empty_coords = np.argwhere(self.empty.data)
         if len(empty_coords) == 0:
