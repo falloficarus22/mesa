@@ -1,6 +1,7 @@
 """Experimental meta-agent membership helpers."""
 
 from .backend import MembershipBackend
+from .facade import MembershipEdge, MembershipView, MetaAgentFacade
 from .meta_agent import (
     MetaAgent,
     create_meta_agent,
@@ -10,6 +11,9 @@ from .meta_agent import (
 
 __all__ = [
     "MembershipBackend",
+    "MembershipEdge",
+    "MembershipView",
+    "MetaAgentFacade",
     "MetaAgent",
     "create_meta_agent",
     "evaluate_combination",
