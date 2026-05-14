@@ -33,7 +33,7 @@ class MembershipBackend:
             return
         self._triplets.add(triplet)
         self._by_agent[agent].add((group, relation))
-        self._by_group[agent].add((agent, relation))
+        self._by_group[group].add((agent, relation))
 
     def bulk_add(self, memberships: Iterable[Triplet]) -> None:
         """Add many typed membership edges."""
