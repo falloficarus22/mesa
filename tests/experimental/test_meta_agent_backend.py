@@ -38,7 +38,7 @@ def test_idempotent_add_and_remove():
 
     backend.remove_membership("a1", "g1", "member")
     backend.remove_membership("a1", "g1", "member")  # idempotent remove
-    assert backend.as_triplets == set()
+    assert backend.as_triplets() == set()
     backend.assert_invariants()
 
 
@@ -69,7 +69,7 @@ def test_remove_agent_cascades_edges():
 
 
 def test_remove_group_cascades_edges():
-    """Removing a group should clear all incident adges."""
+    """Removing a group should clear all incident edges."""
     backend = MembershipBackend()
     backend.bulk_add(
         [("a1", "g1", "member"), ("a1", "g2", "leader"), ("a2", "g1", "member")]
@@ -78,6 +78,6 @@ def test_remove_group_cascades_edges():
     backend.remove_group("g1")
 
     assert backend.agents_of("g1") == set()
-    assert backend.groups_of("a1") == set()
     assert backend.groups_of("a1") == {"g2"}
+    assert backend.groups_of("a2") == set()
     backend.assert_invariants()
