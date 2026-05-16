@@ -1,6 +1,5 @@
 """Backend foundation for typed overlapping meta-agent memberships.
 
-Phase 1 scope:
 - Canonical typed membership representation
 - Safe update operations
 - Invariant checks
