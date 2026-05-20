@@ -29,7 +29,11 @@ class MembershipBackend:
         )
 
     def _to_id(self, entity: Hashable) -> Hashable:
-        """Normalize entities to canonical IDs when available."""
+        """Normalize entity to canonical ID.
+
+        Uses ``mesa.agent.Agent.unique_id`` when available; otherwise returns
+        the entity as-is (for already-hashable external IDs).
+        """
         return getattr(entity, "unique_id", entity)
 
     def add_membership(
