@@ -1,6 +1,7 @@
 """Tests for typed membership backend."""
 
 import pytest
+
 from mesa import Agent, Model
 from mesa.experimental.meta_agents.backend import MembershipBackend
 from mesa.experimental.meta_agents.identity import ensure_entity_index

@@ -1,6 +1,7 @@
 """Tests for the meta_agents module."""
 
 import pytest
+
 from mesa import Agent, Model
 from mesa.discrete_space.cell_agent import CellAgent
 from mesa.discrete_space.grid import OrthogonalMooreGrid

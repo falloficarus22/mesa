@@ -48,7 +48,7 @@ class EntityIndex:
     def _set_entity_id(self, entity: Any, entity_id: int) -> None:
         """Persist the stable entity id on the entity object when possible."""
         try:
-            setattr(entity, "entity_id", entity_id)
+            entity.entity_id = entity_id
         except Exception:
             # Some external objects may not allow attribute assignment.
             # The registry still tracks them via object identity.
@@ -218,5 +218,5 @@ def ensure_entity_index(model: Any) -> EntityIndex:
     entity_index = getattr(model, "entity_index", None)
     if entity_index is None:
         entity_index = EntityIndex()
-        setattr(model, "entity_index", entity_index)
+        model.entity_index = entity_index
     return entity_index
