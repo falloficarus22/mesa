@@ -1,10 +1,7 @@
 """Tests for typed membership backend."""
 
-import pytest
-
 from mesa import Agent, Model
 from mesa.experimental.meta_agents.backend import MembershipBackend
-from mesa.experimental.meta_agents.identity import ensure_entity_index
 from mesa.experimental.meta_agents.meta_agent import MetaAgent
 
 
@@ -98,8 +95,8 @@ def test_non_string_relation_key():
     backend.assert_invariants()
 
 
-def test_backend_prefers_explicit_entity_ids():
-    """Meta-Agent membership bookkeeping should use stable entity ids."""
+def test_backend_uses_unique_ids_for_mesa_agents():
+    """Meta-agent membership bookkeeping should use unique_id values."""
     model = Model()
     agent = Agent(model)
     meta_agent = MetaAgent(model, {agent}, name="Group")
@@ -107,40 +104,7 @@ def test_backend_prefers_explicit_entity_ids():
 
     backend.add_membership(agent, meta_agent, "member")
 
-    assert backend.as_triplets() == {(agent.entity_id, meta_agent.entity_id, "member")}
-    assert backend.groups_of(agent) == {meta_agent.entity_id}
-    assert backend.agents_of(meta_agent) == {agent.entity_id}
+    assert backend.as_triplets() == {(agent.unique_id, meta_agent.unique_id, "member")}
+    assert backend.groups_of(agent) == {meta_agent.unique_id}
+    assert backend.agents_of(meta_agent) == {agent.unique_id}
     backend.assert_invariants()
-
-
-def test_backend_registry_lookup_stays_stable_after_unique_id_updates():
-    """Changing unqiue id should not disturb explicit entity lookup."""
-    model = Model()
-    agent = Agent(model)
-    meta_agent = MetaAgent(model, {agent}, name="Group")
-    entity_index = ensure_entity_index(model)
-
-    original_entity_id = meta_agent.entity_id
-    meta_agent.unique_id = "renamed-group"
-    entity_index.register(meta_agent, kind="meta")
-
-    assert entity_index.entity_for(original_entity_id) is meta_agent
-    assert entity_index.kind_for(original_entity_id) == "meta"
-    assert entity_index.entity_id_for(agent) == agent.entity_id
-    entity_index.assert_invariants()
-
-
-def test_model_deregister_clean_atomic_entity_index_entries():
-    """Removing an atomic agent from the model should drop its identity record."""
-    model = Model()
-    agent = Agent(model)
-    entity_index = ensure_entity_index(model)
-
-    entity_id = agent.entity_id
-    assert entity_index.entity_for(entity_id) is agent
-
-    agent.remove()
-
-    assert not entity_index.contains(entity_id)
-    with pytest.raises(KeyError):
-        entity_index.entity_for(entity_id)

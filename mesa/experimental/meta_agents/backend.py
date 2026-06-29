@@ -3,7 +3,7 @@
 - Canonical typed membership representation
 - Safe update operations
 - Invariant checks
-- Internal-only API (no public facade changes yet)
+- Shared by the public facade and compatibility helpers
 """
 
 from __future__ import annotations
@@ -31,13 +31,9 @@ class MembershipBackend:
     def _to_id(self, entity: Hashable) -> Hashable:
         """Normalize entity to canonical ID.
 
-        Uses an explicit ``entity_id`` when available, then falls back to
-        ``mesa.agent.Agent.unique_id`` and finally the entity as-is (for already
-        hashable external IDs).
+        Uses ``mesa.agent.Agent.unique_id`` when available and finally the entity
+        as-is (for already hashable external IDs).
         """
-        entity_id = getattr(entity, "entity_id", None)
-        if entity_id is not None:
-            return entity_id
         return getattr(entity, "unique_id", entity)
 
     def add_membership(
