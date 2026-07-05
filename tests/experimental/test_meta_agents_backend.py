@@ -1,7 +1,6 @@
 """Tests for typed membership backend."""
 
 from mesa import Agent, Model
-
 from mesa.experimental.meta_agents.backend import MembershipBackend
 from mesa.experimental.meta_agents.meta_agent import MetaAgent
 

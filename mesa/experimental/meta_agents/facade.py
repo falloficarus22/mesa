@@ -43,9 +43,7 @@ class MembershipView:
 
     def as_triplets(self) -> set[tuple[Any, Any, RelationKey]]:
         """Return the memberships as live-object triplets."""
-        return {
-            (edge.agent, edge.group, edge.relation) for edge in self.memberships
-        }
+        return {(edge.agent, edge.group, edge.relation) for edge in self.memberships}
 
     @property
     def agents(self) -> set[Any]:

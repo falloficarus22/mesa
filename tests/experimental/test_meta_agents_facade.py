@@ -1,7 +1,6 @@
 """Tests for the public meta-agent facade."""
 
 from mesa import Agent, Model
-
 from mesa.experimental.meta_agents import (
     MembershipEdge,
     MembershipView,
