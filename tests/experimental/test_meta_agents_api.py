@@ -45,9 +45,7 @@ def test_meta_agents_compatibility_alias_preserves_old_name():
     group = alias.create("Group", [agent], Agent)
 
     assert group is not None
-    assert alias.backend.as_triplets() == {
-        (agent.unique_id, group.unique_id, "member")
-    }
+    assert alias.backend.as_triplets() == {(agent.unique_id, group.unique_id, "member")}
 
 
 def test_meta_agents_remove_member_preserves_overlapping_memberships():
