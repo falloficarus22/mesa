@@ -16,7 +16,6 @@ from mesa.examples.advanced.warehouse.make_warehouse import (
     LOADING_DOCK_COORDS,
     make_warehouse,
 )
-from mesa.experimental import meta_agents
 from mesa.experimental.meta_agents.backend import MembershipBackend
 from mesa.experimental.meta_agents.meta_agent import MetaAgent, create_meta_agent
 from mesa.experimental.scenarios import Scenario
@@ -37,7 +36,6 @@ class WarehouseModel(mesa.Model):
         """Create the warehouse, inventory, and robot meta-agents."""
         if isinstance(scenario, Scenario):
             super().__init__(scenario=scenario)
-            self.model = MetaAgent(backend=facade)
         else:
             super().__init__(scenario=scenario, rng=rng)
         self.inventory = {}
