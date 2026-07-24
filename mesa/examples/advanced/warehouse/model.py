@@ -18,18 +18,35 @@ from mesa.examples.advanced.warehouse.make_warehouse import (
 )
 from mesa.experimental.meta_agents.backend import MembershipBackend
 from mesa.experimental.meta_agents.meta_agent import MetaAgent, create_meta_agent
+from mesa.experimental.scenarios import Scenario
+
+
+class WarehouseScenario(Scenario):
+    """Scenario parameters for the warehouse meta-agent example."""
+
+    rows: int = 8
+    cols: int = 8
+    height: int = 2
 
 
 class WarehouseModel(mesa.Model):
     """Model for simulating warehouse robots assembled from sub-agents."""
 
-    def __init__(self, rng=42):
+    def __init__(self, scenario: WarehouseScenario = WarehouseScenario, rng=42):
         """Create the warehouse, inventory, and robot meta-agents."""
-        super().__init__(rng=rng)
+        if isinstance(scenario, Scenario):
+            super().__init__(scenario=scenario)
+        else:
+            super().__init__(scenario=scenario, rng=rng)
         self.inventory = {}
         self.membership_backend = MembershipBackend()
 
-        layout = make_warehouse(rng=self.random)
+        layout = make_warehouse(
+            rows=self.scenario.rows,
+            cols=self.scenario.cols,
+            height=self.scenario.height,
+            rng=self.random,
+        )
         self.warehouse = OrthogonalMooreGrid(
             (layout.shape[0], layout.shape[1], layout.shape[2]),
             torus=False,
