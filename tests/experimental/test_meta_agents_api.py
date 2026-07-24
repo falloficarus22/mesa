@@ -4,7 +4,6 @@ from mesa import Agent, Model
 from mesa.experimental.meta_agents import (
     MembershipEdge,
     MembershipView,
-    MetaAgentFacade,
     MetaAgents,
 )
 
@@ -33,19 +32,6 @@ def test_meta_agents_create_records_backend_memberships():
     assert isinstance(view.memberships[0], MembershipEdge)
     assert view.memberships[0].agent is agent_1
     assert view.memberships[0].group is meta_agent
-
-
-def test_meta_agents_compatibility_alias_preserves_old_name():
-    """The old class name should still resolve to the new API."""
-    assert MetaAgentFacade is MetaAgents
-
-    model = Model()
-    alias = MetaAgentFacade(model)
-    agent = Agent(model)
-    group = alias.create("Group", [agent], Agent)
-
-    assert group is not None
-    assert alias.backend.as_triplets() == {(agent.unique_id, group.unique_id, "member")}
 
 
 def test_meta_agents_remove_member_preserves_overlapping_memberships():
