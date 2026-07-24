@@ -13,11 +13,12 @@ from mesa.examples.advanced.warehouse.agents import (
     WorkerAgent,
 )
 from mesa.examples.advanced.warehouse.make_warehouse import LOADING_DOCK_COORDS
+from mesa.examples.advanced.warehouse.model import WarehouseScenario
 
 
 def test_warehouse_model_uses_membership_backend():
     """Robot memberships should be mirrored into the backend and cleaned up."""
-    model = WarehouseModel(rng=42)
+    model = WarehouseModel(scenario=WarehouseScenario(rng=42))
     backend = model.membership_backend
     robot_type = model.robot_agent_type
 
@@ -65,6 +66,23 @@ def test_warehouse_model_uses_membership_backend():
     del model
     gc.collect()
     assert ref() is None
+
+
+def test_warehouse_model_supports_scenario_initialization():
+    """The warehouse model should accept scenario-driven benchmark inputs."""
+    scenario = WarehouseScenario(rows=10, cols=12, height=2, rng=42)
+    model = WarehouseModel(scenario=scenario)
+
+    assert model.scenario.rows == 10
+    assert model.scenario.cols == 12
+    assert model.scenario.height == 2
+    expected_inventory = sum(
+        1
+        for row in range(2, scenario.rows - 1, 3)
+        for col in range(1, scenario.cols, 3)
+        for _ in range(scenario.height)
+    )
+    assert len(model.agents_by_type[InventoryAgent]) == expected_inventory
 
 
 def test_warehouse_robot_completes_inventory_cycle():
