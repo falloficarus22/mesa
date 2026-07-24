@@ -6,6 +6,7 @@ from mesa.examples.advanced.alliance_formation.model import (
     AllianceScenario,
     MultiLevelAllianceModel,
 )
+from mesa.experimental.meta_agents import MetaAgents
 
 
 def test_alliance_model_records_overlapping_memberships(monkeypatch):
@@ -31,6 +32,8 @@ def test_alliance_model_records_overlapping_memberships(monkeypatch):
 
     backend = model.membership_backend
 
+    assert isinstance(model.meta_agents, MetaAgents)
+    assert backend is model.meta_agents.backend
     assert len(agent_0.meta_agents) == 2
     assert backend.groups_of(agent_0) == {
         meta.unique_id for meta in agent_0.meta_agents
