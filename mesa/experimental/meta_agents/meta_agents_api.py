@@ -9,7 +9,7 @@ from typing import Any
 from mesa.agent import Agent
 
 from .backend import MembershipBackend, RelationKey, Triplet
-from .meta_agent import create_meta_agent
+from .meta_agent import _create_meta_agent_instance
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,7 +146,7 @@ class MetaAgents:
         if member_relations is not None and not agents:
             agents = [member for member, _ in member_relations]
 
-        meta_agent = create_meta_agent(
+        meta_agent = _create_meta_agent_instance(
             self.model,
             new_agent_class,
             agents,
