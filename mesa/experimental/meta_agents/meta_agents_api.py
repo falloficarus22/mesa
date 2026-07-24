@@ -226,13 +226,8 @@ class MetaAgents:
         return self._detach_entity(entity)
 
 
-# Legacy compatibility alias for the transition period.
-MetaAgentFacade = MetaAgents
-
-
 __all__ = [
     "MembershipEdge",
     "MembershipView",
-    "MetaAgentFacade",
     "MetaAgents",
 ]
