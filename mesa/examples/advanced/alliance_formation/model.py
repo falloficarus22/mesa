@@ -4,9 +4,8 @@ import numpy as np
 import mesa
 from mesa import Agent
 from mesa.examples.advanced.alliance_formation.agents import AllianceAgent
-from mesa.experimental.meta_agents.backend import MembershipBackend
+from mesa.experimental.meta_agents import MetaAgents
 from mesa.experimental.meta_agents.meta_agent import (
-    create_meta_agent,
     find_combinations,
 )
 from mesa.experimental.scenarios import Scenario
@@ -38,7 +37,8 @@ class MultiLevelAllianceModel(mesa.Model):
         super().__init__(scenario=scenario)
         self.network = nx.Graph()  # Initialize the network
         self.datacollector = mesa.DataCollector(model_reporters={"Network": "network"})
-        self.membership_backend = MembershipBackend()
+        self.meta_agents = MetaAgents(self)
+        self.membership_backend = self.meta_agents.backend
 
         # Create Agents
         power = self.rng.normal(scenario.mean, scenario.std_dev, scenario.n)
@@ -61,12 +61,6 @@ class MultiLevelAllianceModel(mesa.Model):
         """
         for agent in agents:
             self.network.add_edge(meta_agent.unique_id, agent.unique_id)
-
-    def _record_alliance_membership(self, meta_agent, agents) -> None:
-        """Mirror alliance membership into the backend."""
-        self.membership_backend.bulk_add(
-            [(agent, meta_agent, "member") for agent in agents]
-        )
 
     def calculate_shapley_value(self, agents):
         """
@@ -188,8 +182,7 @@ class MultiLevelAllianceModel(mesa.Model):
                         str(agent.unique_id) for agent in alliance_members
                     )
                     class_name = f"MetaAgentLevel{attributes[2]}_{alliance_signature}"
-                    meta = create_meta_agent(
-                        self,
+                    meta = self.meta_agents.create(
                         class_name,
                         alliance_members,
                         Agent,
@@ -208,4 +201,3 @@ class MultiLevelAllianceModel(mesa.Model):
                             level=meta.level,
                         )
                         self.add_link(meta, meta.agents)
-                        self._record_alliance_membership(meta, meta.agents)
