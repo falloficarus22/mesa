@@ -17,12 +17,14 @@ from mesa.examples.advanced.warehouse.model import WarehouseScenario
 
 
 def test_warehouse_model_uses_membership_backend():
-    """Robot memberships should be mirrored into the backend and cleaned up."""
+    """Robot memberships should be recorded via MetaAgents and cleaned up."""
     model = WarehouseModel(scenario=WarehouseScenario(rng=42))
     backend = model.membership_backend
+    meta_agents = model.meta_agents
     robot_type = model.robot_agent_type
 
     assert robot_type is not None
+    assert backend is meta_agents.backend
 
     robots = sorted(model.agents_by_type[robot_type], key=lambda agent: agent.unique_id)
     assert len(robots) == len(LOADING_DOCK_COORDS)
@@ -40,6 +42,14 @@ def test_warehouse_model_uses_membership_backend():
                 (worker.unique_id, robot.unique_id, "worker"),
             }
         )
+
+        view = meta_agents.query_memberships(robot)
+        assert view.as_triplets() == {
+            (route, robot, "router"),
+            (sensor, robot, "sensor"),
+            (worker, robot, "worker"),
+        }
+        assert view.relations == {"router", "sensor", "worker"}
 
         assert backend.groups_of(route) == {robot.unique_id}
         assert backend.groups_of(sensor) == {robot.unique_id}
@@ -63,7 +73,7 @@ def test_warehouse_model_uses_membership_backend():
     backend.assert_invariants()
 
     del robots, robot, robot_type, expected_triplets, route, sensor, worker, before_step
-    del model
+    del model, meta_agents, backend, view
     gc.collect()
     assert ref() is None
 

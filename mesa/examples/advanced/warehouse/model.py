@@ -1,4 +1,4 @@
-"""Warehouse meta-agent example built on the membership backend."""
+"""Warehouse meta-agent example built on the public meta-agents API."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from mesa.examples.advanced.warehouse.make_warehouse import (
     LOADING_DOCK_COORDS,
     make_warehouse,
 )
-from mesa.experimental.meta_agents.backend import MembershipBackend
-from mesa.experimental.meta_agents.meta_agent import MetaAgent, create_meta_agent
+from mesa.experimental.meta_agents import MetaAgents
+from mesa.experimental.meta_agents.meta_agent import MetaAgent
 from mesa.experimental.scenarios import Scenario
 
 
@@ -39,7 +39,8 @@ class WarehouseModel(mesa.Model):
         else:
             super().__init__(scenario=scenario, rng=rng)
         self.inventory = {}
-        self.membership_backend = MembershipBackend()
+        self.meta_agents = MetaAgents(self)
+        self.membership_backend = self.meta_agents.backend
 
         layout = make_warehouse(
             rows=self.scenario.rows,
@@ -82,10 +83,9 @@ class WarehouseModel(mesa.Model):
                 try:
                     MetaAgent.remove(robot)
                 finally:
-                    robot.model.membership_backend.remove_group(robot)
+                    robot.model.meta_agents.backend.remove_group(robot)
 
-            meta = create_meta_agent(
-                self,
+            meta = self.meta_agents.create(
                 "RobotAgent",
                 [router, sensor, worker],
                 CellAgent,
@@ -96,6 +96,11 @@ class WarehouseModel(mesa.Model):
                 meta_methods={"remove": remove_robot},
                 assume_constituting_agent_attributes=True,
                 assume_constituting_agent_methods=True,
+                memberships=[
+                    (router, "router"),
+                    (sensor, "sensor"),
+                    (worker, "worker"),
+                ],
             )
 
             if meta is None:
@@ -105,29 +110,6 @@ class WarehouseModel(mesa.Model):
                 self.robot_agent_type = type(meta)
 
             self.RobotAgent = meta
-            self._record_robot_memberships(meta)
-
-    def _record_robot_memberships(self, robot) -> None:
-        """Mirror a robot's constituting relationships into the backend."""
-        self.membership_backend.bulk_add(
-            [
-                (
-                    robot.get_constituting_agent_instance(RouteAgent),
-                    robot,
-                    "router",
-                ),
-                (
-                    robot.get_constituting_agent_instance(SensorAgent),
-                    robot,
-                    "sensor",
-                ),
-                (
-                    robot.get_constituting_agent_instance(WorkerAgent),
-                    robot,
-                    "worker",
-                ),
-            ]
-        )
 
     def central_move(self, robot):
         """Delegate path execution to the robot's worker role."""
