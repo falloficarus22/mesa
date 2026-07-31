@@ -43,3 +43,16 @@ def test_alliance_model_records_overlapping_memberships(monkeypatch):
 
     assert backend.as_triplets() == expected_triplets
     backend.assert_invariants()
+
+
+def test_alliance_model_forms_higher_level_alliances():
+    """Meta-agents at one level can form an alliance at the next level."""
+    model = MultiLevelAllianceModel(
+        scenario=AllianceScenario(n=4, mean=0.5, std_dev=0.0, rng=42)
+    )
+
+    model.step()
+    assert sum(agent.level == 1 for agent in model.agents) == 2
+
+    model.step()
+    assert sum(agent.level == 2 for agent in model.agents) == 1
