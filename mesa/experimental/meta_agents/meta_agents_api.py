@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
-from mesa.agent import Agent
+from mesa.agent import Agent, AgentSet
 
 from .backend import MembershipBackend, RelationKey, Triplet
 from .meta_agent import _create_meta_agent_instance
@@ -224,6 +225,82 @@ class MetaAgents:
     def deactivate(self, entity: Hashable) -> MembershipView:
         """Remove an entity from all memberships without deleting the object."""
         return self._detach_entity(entity)
+
+    def at_level(
+        self,
+        level: int,
+        *,
+        root: Hashable,
+        relation: RelationKey | None = "member",
+    ) -> AgentSet:
+        """Return agents at a containment depth below ``root``.
+
+        Levels are structural shortest-path distances through membership edges,
+        not a persistent ``agent.level`` property. ``root`` is level ``0``; its
+        direct members are level ``1``. When an agent is reachable by more than
+        one path, it appears only at its shallowest depth from ``root``.
+
+        Parameters
+        ----------
+        level : int
+            Non-negative containment depth relative to ``root``.
+        root : Hashable
+            Hierarchy root (live agent or backend id). Must be registered on
+            this façade's model.
+        relation : RelationKey or None, default ``"member"``
+            Membership relation to traverse. ``None`` includes all relations.
+
+        Returns:
+        -------
+        AgentSet
+            Live agents at the requested level (empty if none).
+
+        Raises:
+        ------
+        ValueError
+            If ``level`` is negative or ``root`` is not in the model.
+
+        Examples:
+        --------
+        >>> model.meta_agents.at_level(4, root=world)
+        """
+        if level < 0:
+            raise ValueError(f"level must be non-negative, got {level}")
+
+        lookup = self._live_entity_lookup()
+        root_id = self._entity_id(root)
+        if root_id not in lookup:
+            raise ValueError(f"root {root!r} is not registered in the model")
+
+        if level == 0:
+            return AgentSet([lookup[root_id]], random=self.model.random)
+
+        # BFS downward: group -> members. First visit is nearest depth.
+        visited: set[Hashable] = {root_id}
+        queue: deque[tuple[Hashable, int]] = deque([(root_id, 0)])
+        at_depth: list[Any] = []
+
+        while queue:
+            group_id, depth = queue.popleft()
+            if depth >= level:
+                continue
+            member_ids = sorted(
+                self.backend.agents_of(group_id, relation=relation),
+                key=str,
+            )
+            for member_id in member_ids:
+                if member_id in visited:
+                    continue
+                visited.add(member_id)
+                next_depth = depth + 1
+                if next_depth == level:
+                    entity = lookup.get(member_id)
+                    if entity is not None:
+                        at_depth.append(entity)
+                elif next_depth < level:
+                    queue.append((member_id, next_depth))
+
+        return AgentSet(at_depth, random=self.model.random)
 
 
 __all__ = [

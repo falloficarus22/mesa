@@ -1,6 +1,9 @@
 """Tests for the public meta-agents API."""
 
+import pytest
+
 from mesa import Agent, Model
+from mesa.agent import AgentSet
 from mesa.experimental.meta_agents import (
     MembershipEdge,
     MembershipView,
@@ -102,3 +105,149 @@ def test_meta_agents_deactivate_detaches_all_memberships_without_removing_entity
     assert group not in agent_1.meta_agents
     assert agent_1.meta_agent is None
     assert group in agent_2.meta_agents
+
+
+def _four_level_hierarchy():
+    """Build world -> region -> city -> household -> person hierarchy."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    model.meta_agents = meta_agents
+
+    person_a = Agent(model)
+    person_b = Agent(model)
+    person_c = Agent(model)
+    household = meta_agents.create("Household", [person_a, person_b], Agent)
+    city = meta_agents.create("City", [household, person_c], Agent)
+    region = meta_agents.create("Region", [city], Agent)
+    world = meta_agents.create("World", [region], Agent)
+
+    return (
+        model,
+        meta_agents,
+        world,
+        region,
+        city,
+        household,
+        person_a,
+        person_b,
+        person_c,
+    )
+
+
+def test_at_level_four_level_hierarchy():
+    """Each containment depth from root returns the expected AgentSet."""
+    (
+        _model,
+        meta_agents,
+        world,
+        region,
+        city,
+        household,
+        person_a,
+        person_b,
+        person_c,
+    ) = _four_level_hierarchy()
+
+    level0 = meta_agents.at_level(0, root=world)
+    assert isinstance(level0, AgentSet)
+    assert set(level0) == {world}
+
+    assert set(meta_agents.at_level(1, root=world)) == {region}
+    assert set(meta_agents.at_level(2, root=world)) == {city}
+    assert set(meta_agents.at_level(3, root=world)) == {household, person_c}
+    assert set(meta_agents.at_level(4, root=world)) == {person_a, person_b}
+
+
+def test_at_level_siblings_and_agentset_ops():
+    """Siblings share a level and results support AgentSet selection."""
+    _, meta_agents, world, _, _, _, person_a, person_b, _ = _four_level_hierarchy()
+
+    level4 = meta_agents.at_level(4, root=world)
+    assert set(level4) == {person_a, person_b}
+    selected = level4.select(lambda a: a is person_a)
+    assert set(selected) == {person_a}
+
+
+def test_at_level_order_is_deterministic():
+    """Same-level agents keep stable order (sorted member ids per group)."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    root = Agent(model)
+    # Fill so next ids are 11 and 2: str sort is "11" < "2", unlike int order.
+    fillers = [Agent(model) for _ in range(9)]  # ids 2..10
+    agent_11 = Agent(model)  # id 11
+    agent_2 = fillers[0]  # id 2
+
+    meta_agents.backend.add_membership(agent_11, root, "member")
+    meta_agents.backend.add_membership(agent_2, root, "member")
+
+    # Unsorted set iteration follows int hash order (2 then 11).
+    # String sort requires "11" before "2".
+    assert str(agent_11.unique_id) < str(agent_2.unique_id)
+    assert agent_2.unique_id < agent_11.unique_id
+    assert list(meta_agents.at_level(1, root=root)) == [agent_11, agent_2]
+    assert list(meta_agents.at_level(1, root=root)) == list(
+        meta_agents.at_level(1, root=root)
+    )
+
+
+def test_at_level_default_relation_and_explicit_relation():
+    """Default ignores non-member edges; explicit relation includes them."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    root = Agent(model)
+    member = Agent(model)
+    ally = Agent(model)
+    meta_agents.backend.add_membership(member, root, "member")
+    meta_agents.backend.add_membership(ally, root, "ally")
+
+    assert set(meta_agents.at_level(1, root=root)) == {member}
+    assert set(meta_agents.at_level(1, root=root, relation="ally")) == {ally}
+    assert set(meta_agents.at_level(1, root=root, relation=None)) == {member, ally}
+
+
+def test_at_level_overlapping_paths_use_nearest_depth():
+    """An agent on multiple paths appears only at its shallowest level."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    root = Agent(model)
+    mid = Agent(model)
+    leaf = Agent(model)
+    # root --member--> leaf (depth 1)
+    # root --member--> mid --member--> leaf (depth 2)
+    meta_agents.backend.add_membership(leaf, root, "member")
+    meta_agents.backend.add_membership(mid, root, "member")
+    meta_agents.backend.add_membership(leaf, mid, "member")
+
+    assert set(meta_agents.at_level(1, root=root)) == {leaf, mid}
+    assert set(meta_agents.at_level(2, root=root)) == set()
+
+
+def test_at_level_empty_and_validation():
+    """Absent levels are empty; invalid level/root raise ValueError."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    root = Agent(model)
+    outsider = object()
+
+    assert len(meta_agents.at_level(3, root=root)) == 0
+
+    with pytest.raises(ValueError, match="non-negative"):
+        meta_agents.at_level(-1, root=root)
+
+    with pytest.raises(ValueError, match="not registered"):
+        meta_agents.at_level(0, root=outsider)
+
+
+def test_at_level_cyclic_membership_terminates():
+    """Cyclic membership graphs must not loop indefinitely."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    a = Agent(model)
+    b = Agent(model)
+    meta_agents.backend.add_membership(b, a, "member")
+    meta_agents.backend.add_membership(a, b, "member")
+
+    assert set(meta_agents.at_level(0, root=a)) == {a}
+    assert set(meta_agents.at_level(1, root=a)) == {b}
+    assert set(meta_agents.at_level(2, root=a)) == set()
