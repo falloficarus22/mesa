@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mesa.examples.advanced.alliance_formation.model import (
+from mesa.examples.experimental.alliance_formation.model import (
     AllianceScenario,
     MultiLevelAllianceModel,
 )
@@ -24,7 +24,7 @@ def test_alliance_model_records_overlapping_memberships(monkeypatch):
         ]
 
     monkeypatch.setattr(
-        "mesa.examples.advanced.alliance_formation.model.find_combinations",
+        "mesa.examples.experimental.alliance_formation.model.find_combinations",
         fake_find_combinations,
     )
 

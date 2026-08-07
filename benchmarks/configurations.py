@@ -1,5 +1,7 @@
 """configurations for benchmarks."""
 
+from mesa.examples.advanced.alliance_formation.model import AllianceScenario
+
 from mesa.examples import (
     BoidFlockers,
     BoltzmannWealth,
@@ -9,7 +11,6 @@ from mesa.examples import (
     WarehouseModel,
     WolfSheep,
 )
-from mesa.examples.advanced.alliance_formation.model import AllianceScenario
 from mesa.examples.advanced.sugarscape_g1mt.model import SugarScapeScenario
 from mesa.examples.advanced.warehouse.model import WarehouseScenario
 from mesa.examples.advanced.wolf_sheep.model import WolfSheepScenario

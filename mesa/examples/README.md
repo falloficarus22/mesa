@@ -44,7 +44,6 @@ This is Epstein & Axtell's Sugarscape model with Traders, a detailed description
 ### [Wolf-Sheep Predation Model](examples/advanced/wolf_sheep)
 Implementation of an ecological model of predation and reproduction, based on the NetLogo [Wolf Sheep Predation](http://ccl.northwestern.edu/netlogo/models/WolfSheepPredation) model.
 
-<<<<<<< HEAD
 ## Experimental Examples
 The experimental examples are built on Mesa APIs that live under `mesa.experimental` and carry no semver guarantees. They show where Mesa is heading, but both the models and the APIs they use may change without notice.
 
@@ -52,6 +51,3 @@ The experimental examples are built on Mesa APIs that live under `mesa.experimen
 Demonstrates dynamic meta-agent creation: agents form alliances through a game-theoretic process, and the resulting alliances become meta-agents that can themselves form higher-level alliances.
 
 The experimental Alliance Formation and advanced Warehouse examples are also used in the benchmark comparison workflow when comparing the `meta-agents` branch with a feature branch.
-=======
-The advanced meta-agents examples, especially alliance formation and warehouse, are also used in the benchmark comparison workflow when you want to compare the `meta-agents` branch against a feature branch.
->>>>>>> 9913e093 (update examples)
