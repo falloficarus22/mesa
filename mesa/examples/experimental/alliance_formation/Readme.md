@@ -16,8 +16,6 @@ In this simulation n agents are created, who have two attributes (1) power and (
 
 This example records memberships in the backend so agents can participate in multiple overlapping memberships.
 
-If you would like to see an example of explicit meta-agent formation see the [warehouse model in the Mesa example's repository](https://github.com/mesa/mesa-examples/tree/main/examples/warehouse)
-
 
 ## Files
 

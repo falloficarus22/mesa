@@ -6,11 +6,9 @@ from mesa.examples import (
     MultiLevelAllianceModel,
     Schelling,
     SugarscapeG1mt,
-    WarehouseModel,
     WolfSheep,
 )
 from mesa.examples.advanced.sugarscape_g1mt.model import SugarScapeScenario
-from mesa.examples.advanced.warehouse.model import WarehouseScenario
 from mesa.examples.advanced.wolf_sheep.model import WolfSheepScenario
 from mesa.examples.basic.boid_flockers.model import BoidsScenario
 from mesa.examples.basic.boltzmann_wealth_model.model import BoltzmannScenario
@@ -142,20 +140,6 @@ configurations = {
             "iterations": 3,
             "steps": 20,
             "scenario": AllianceScenario(n=120, mean=0.5, std_dev=0.1, rng=42),
-        },
-    },
-    WarehouseModel: {
-        "small": {
-            "replications": 25,
-            "iterations": 3,
-            "steps": 10,
-            "scenario": WarehouseScenario(rows=8, cols=8, height=2, rng=42),
-        },
-        "large": {
-            "replications": 10,
-            "iterations": 3,
-            "steps": 20,
-            "scenario": WarehouseScenario(rows=16, cols=16, height=2, rng=42),
         },
     },
 }
