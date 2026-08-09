@@ -49,5 +49,3 @@ The experimental examples are built on Mesa APIs that live under `mesa.experimen
 
 ### [Alliance Formation Model](examples/experimental/alliance_formation)
 Demonstrates dynamic meta-agent creation: agents form alliances through a game-theoretic process, and the resulting alliances become meta-agents that can themselves form higher-level alliances.
-
-The experimental Alliance Formation and advanced Warehouse examples are also used in the benchmark comparison workflow when comparing the `meta-agents` branch with a feature branch.
