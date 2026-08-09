@@ -1,7 +1,5 @@
 """configurations for benchmarks."""
 
-from mesa.examples.advanced.alliance_formation.model import AllianceScenario
-
 from mesa.examples import (
     BoidFlockers,
     BoltzmannWealth,
@@ -17,6 +15,7 @@ from mesa.examples.advanced.wolf_sheep.model import WolfSheepScenario
 from mesa.examples.basic.boid_flockers.model import BoidsScenario
 from mesa.examples.basic.boltzmann_wealth_model.model import BoltzmannScenario
 from mesa.examples.basic.schelling.model import SchellingScenario
+from mesa.examples.experimental.alliance_formation.model import AllianceScenario
 
 configurations = {
     # BoltzmannWealth Model Configurations
