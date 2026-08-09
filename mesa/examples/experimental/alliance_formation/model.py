@@ -156,11 +156,14 @@ class MultiLevelAllianceModel(mesa.Model):
         """
         Execute one step of the model.
         """
-        # Get all other agents of the same type
-        agent_types = list(self.agents_by_type.keys())
+        # Agents at the same hierarchy level can form an alliance. Meta-agents
+        # use dynamically generated classes, so grouping by concrete type would
+        # isolate every meta-agent and prevent higher-level alliances.
+        agents_by_level = {}
+        for agent in self.agents:
+            agents_by_level.setdefault(agent.level, []).append(agent)
 
-        for agent_type in agent_types:
-            similar_agents = self.agents_by_type[agent_type]
+        for similar_agents in agents_by_level.values():
 
             # Find the best combinations using find_combinations
             if (
