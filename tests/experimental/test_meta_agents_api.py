@@ -9,6 +9,7 @@ from mesa.experimental.meta_agents import (
     MembershipView,
     MetaAgents,
 )
+from mesa.experimental.meta_agents.meta_agent import MetaAgent, create_meta_agent
 
 
 def test_meta_agents_create_records_backend_memberships():
@@ -35,6 +36,97 @@ def test_meta_agents_create_records_backend_memberships():
     assert isinstance(view.memberships[0], MembershipEdge)
     assert view.memberships[0].agent is agent_1
     assert view.memberships[0].group is meta_agent
+
+
+def test_meta_agents_installs_one_authoritative_facade_per_model():
+    """A model can have only one facade and rejects pre-existing legacy groups."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+
+    assert model.meta_agents is meta_agents
+    with pytest.raises(RuntimeError, match="different MetaAgents facade"):
+        MetaAgents(model)
+
+    legacy_model = Model()
+    MetaAgent(legacy_model)
+    with pytest.raises(RuntimeError, match="legacy MetaAgent instances"):
+        MetaAgents(legacy_model)
+
+
+def test_legacy_group_creation_is_rejected_when_facade_is_installed():
+    """Raw legacy construction cannot create an untracked group beside a facade."""
+    model = Model()
+    MetaAgents(model)
+    member = Agent(model)
+
+    with pytest.raises(RuntimeError, match=r"model\.meta_agents\.create"):
+        MetaAgent(model, [member])
+    with pytest.raises(RuntimeError, match=r"model\.meta_agents\.create"):
+        create_meta_agent(model, "Group", [member], Agent)
+
+
+def test_bound_legacy_mutators_keep_backend_and_mirrors_in_sync():
+    """Legacy mutations on facade-created groups are routed through the backend."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    agent_1 = Agent(model)
+    agent_2 = Agent(model)
+    group = meta_agents.create("Group", [agent_1], Agent)
+
+    assert group is not None
+    group.add_constituting_agents([agent_2])
+    assert meta_agents.backend.as_triplets() == {
+        (agent_1.unique_id, group.unique_id, "member"),
+        (agent_2.unique_id, group.unique_id, "member"),
+    }
+    assert agent_2 in group
+    assert group in agent_2.meta_agents
+
+    group.remove_constituting_agents([agent_1])
+    assert meta_agents.backend.as_triplets() == {
+        (agent_2.unique_id, group.unique_id, "member")
+    }
+    assert agent_1 not in group
+    assert group not in agent_1.meta_agents
+
+    group.remove()
+    assert meta_agents.backend.as_triplets() == set()
+    assert group not in model.agents
+    assert group not in agent_2.meta_agents
+
+
+def test_dissolve_skips_mirror_updates_for_already_removed_members():
+    """Dissolve handles backend IDs whose live agents were deregistered first."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    agent = Agent(model)
+    group = meta_agents.create("Group", [agent], Agent)
+
+    assert group is not None
+    agent.remove()
+    group.remove()
+
+    assert meta_agents.backend.as_triplets() == set()
+    assert group not in model.agents
+
+
+def test_legacy_remove_default_relation_keeps_other_relation_and_mirror():
+    """Legacy removal affects only the default relation, not typed memberships."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    agent = Agent(model)
+    group = meta_agents.create("Group", [], Agent)
+
+    assert group is not None
+    meta_agents.add_member(group, agent, relation="ally")
+    group.add_constituting_agents([agent])
+    group.remove_constituting_agents([agent])
+
+    assert meta_agents.backend.as_triplets() == {
+        (agent.unique_id, group.unique_id, "ally")
+    }
+    assert agent in group
+    assert group in agent.meta_agents
 
 
 def test_meta_agents_remove_member_preserves_overlapping_memberships():

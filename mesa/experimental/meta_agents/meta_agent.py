@@ -30,6 +30,7 @@ _RESERVED_META_ATTRIBUTE_NAMES = {
     "rng",
     "meta_agents",
     "meta_agent",
+    "_membership_api",
     "_constituting_set",
 }
 
@@ -257,6 +258,7 @@ def _create_meta_agent_instance(
     meta_methods: dict[str, Callable] | None = None,
     assume_constituting_agent_methods: bool = False,
     assume_constituting_agent_attributes: bool = False,
+    _membership_api: Any | None = None,
 ) -> Any | None:
     """Create or reuse a meta-agent instance without recording backend edges."""
     agents = _deduplicate_preserving_order(agents)
@@ -274,9 +276,17 @@ def _create_meta_agent_instance(
 
     meta_agent = _find_existing_meta_agent(agents, new_agent_class)
     if meta_agent is not None:
+        existing_api = getattr(meta_agent, "_membership_api", None)
+        if _membership_api is not None and existing_api not in (None, _membership_api):
+            raise RuntimeError("Meta-agent is bound to a different MetaAgents facade")
+        if _membership_api is not None:
+            meta_agent._membership_api = _membership_api
         _apply_meta_attributes(meta_agent, resolved_attributes)
         _apply_meta_methods(meta_agent, resolved_methods)
-        meta_agent.add_constituting_agents(agents)
+        if _membership_api is None:
+            meta_agent.add_constituting_agents(agents)
+        else:
+            meta_agent._add_constituting_agents_mirror(agents)
         return meta_agent
 
     agent_class = extract_class(model.agents_by_type, new_agent_class)
@@ -287,6 +297,7 @@ def _create_meta_agent_instance(
         model,
         agents,
         initial_attributes=resolved_attributes,
+        _membership_api=_membership_api,
     )
     _apply_meta_attributes(meta_agent, resolved_attributes)
     _apply_meta_methods(meta_agent, resolved_methods)
@@ -328,6 +339,10 @@ def create_meta_agent(
         MetaAgent instance
 >>>>>>> origin/main
     """
+    if getattr(model, "meta_agents", None) is not None:
+        raise RuntimeError(
+            "Use model.meta_agents.create() when a MetaAgents facade is installed"
+        )
     return _create_meta_agent_instance(
         model,
         new_agent_class,
@@ -353,13 +368,22 @@ class MetaAgent(Agent):
         agents: Iterable[Agent] | None = None,
         name: str = "MetaAgent",
         initial_attributes: dict[str, Any] | None = None,
+        _membership_api: Any | None = None,
     ):
         """Create a meta-agent from an optional iterable of component agents."""
+        installed_api = getattr(model, "meta_agents", None)
+        if _membership_api is None and installed_api is not None:
+            raise RuntimeError(
+                "Use model.meta_agents.create() when a MetaAgents facade is installed"
+            )
+        if _membership_api is not None and installed_api is not _membership_api:
+            raise RuntimeError("Meta-agent must be created by its model's MetaAgents facade")
         if initial_attributes:
             for key, value in initial_attributes.items():
                 object.__setattr__(self, key, value)
 
         super().__init__(model)
+        self._membership_api = _membership_api
         self._constituting_set = AgentSet(agents or [], random=model.random)
         self.name = name
 
@@ -405,22 +429,50 @@ class MetaAgent(Agent):
                 f"No constituting_agent of type {agent_type} found."
             ) from None
 
-    def add_constituting_agents(self, new_agents: Iterable[Agent]) -> None:
-        """Add component agents and update legacy compatibility mirrors."""
+    def _add_constituting_agents_mirror(self, new_agents: Iterable[Agent]) -> None:
+        """Add component agents to the non-authoritative compatibility mirror."""
         for agent in new_agents:
             self._constituting_set.add(agent)
             _attach_meta_agent(agent, self)
 
-    def remove_constituting_agents(self, remove_agents: Iterable[Agent]) -> None:
-        """Remove component agents and update legacy compatibility mirrors."""
+    def _remove_constituting_agents_mirror(
+        self, remove_agents: Iterable[Agent]
+    ) -> None:
+        """Remove component agents from the non-authoritative mirror."""
         for agent in remove_agents:
             self._constituting_set.discard(agent)
             _detach_meta_agent(agent, self)
 
-    def remove(self) -> None:
-        """Remove this meta-agent and clear live references from components."""
-        self.remove_constituting_agents(set(self._constituting_set))
+    def add_constituting_agents(self, new_agents: Iterable[Agent]) -> None:
+        """Add component agents through the authoritative facade when bound."""
+        membership_api = self._membership_api
+        if membership_api is None:
+            self._add_constituting_agents_mirror(new_agents)
+            return
+        for agent in new_agents:
+            membership_api.add_member(self, agent)
+
+    def remove_constituting_agents(self, remove_agents: Iterable[Agent]) -> None:
+        """Remove default memberships through the authoritative facade when bound."""
+        membership_api = self._membership_api
+        if membership_api is None:
+            self._remove_constituting_agents_mirror(remove_agents)
+            return
+        for agent in remove_agents:
+            membership_api.remove_member(self, agent)
+
+    def _remove_from_model(self) -> None:
+        """Clear local mirrors and deregister without touching the backend."""
+        self._remove_constituting_agents_mirror(set(self._constituting_set))
         super().remove()
+
+    def remove(self) -> None:
+        """Remove this meta-agent through the authoritative facade when bound."""
+        membership_api = self._membership_api
+        if membership_api is None:
+            self._remove_from_model()
+            return
+        membership_api.dissolve(self)
 
     def step(self) -> None:
         """Default meta-agent behavior."""

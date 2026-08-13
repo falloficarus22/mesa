@@ -10,7 +10,7 @@ from typing import Any
 from mesa.agent import Agent, AgentSet
 
 from .backend import MembershipBackend, RelationKey, Triplet
-from .meta_agent import _create_meta_agent_instance
+from .meta_agent import MetaAgent, _create_meta_agent_instance
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,8 +67,16 @@ class MetaAgents:
 
     def __init__(self, model: Any, backend: MembershipBackend | None = None) -> None:
         """Create a meta-agents API bound to one model."""
+        existing_api = getattr(model, "meta_agents", None)
+        if existing_api is not None and existing_api is not self:
+            raise RuntimeError("Model already has a different MetaAgents facade")
+        if any(isinstance(entity, MetaAgent) for entity in model.agents):
+            raise RuntimeError(
+                "Cannot install MetaAgents on a model with legacy MetaAgent instances"
+            )
         self.model = model
         self.backend = backend or MembershipBackend()
+        model.meta_agents = self
 
     def _entity_id(self, entity: Hashable) -> Hashable:
         """Return the backend identity for a live entity or hashable external id."""
@@ -124,8 +132,10 @@ class MetaAgents:
         for edge in snapshot.memberships:
             group = edge.group
             member = edge.agent
-            if hasattr(group, "remove_constituting_agents"):
-                group.remove_constituting_agents({member})
+            if isinstance(member, Agent) and hasattr(
+                group, "_remove_constituting_agents_mirror"
+            ):
+                group._remove_constituting_agents_mirror({member})
 
         return snapshot
 
@@ -156,6 +166,7 @@ class MetaAgents:
             meta_methods=meta_methods,
             assume_constituting_agent_methods=assume_constituting_agent_methods,
             assume_constituting_agent_attributes=assume_constituting_agent_attributes,
+            _membership_api=self,
         )
 
         if meta_agent is None:
@@ -180,8 +191,12 @@ class MetaAgents:
         already_linked = bool(self.backend.relations_between(member, group))
         self.backend.add_membership(member, group, relation)
 
-        if not already_linked and hasattr(group, "add_constituting_agents"):
-            group.add_constituting_agents({member})
+        if (
+            not already_linked
+            and isinstance(member, Agent)
+            and hasattr(group, "_add_constituting_agents_mirror")
+        ):
+            group._add_constituting_agents_mirror({member})
 
         return self.query_memberships(member)
 
@@ -194,10 +209,12 @@ class MetaAgents:
         """Remove one member from one group and keep the object layer in sync."""
         self.backend.remove_membership(member, group, relation)
 
-        if not self.backend.relations_between(member, group) and hasattr(
-            group, "remove_constituting_agents"
+        if (
+            not self.backend.relations_between(member, group)
+            and isinstance(member, Agent)
+            and hasattr(group, "_remove_constituting_agents_mirror")
         ):
-            group.remove_constituting_agents({member})
+            group._remove_constituting_agents_mirror({member})
 
         return self.query_memberships(member)
 
@@ -218,7 +235,9 @@ class MetaAgents:
         """Remove an entity's memberships and delete it from the model when possible."""
         snapshot = self._detach_entity(entity)
         live_entity = self._resolve_entity(self._entity_id(entity))
-        if hasattr(live_entity, "remove"):
+        if hasattr(live_entity, "_remove_from_model"):
+            live_entity._remove_from_model()
+        elif hasattr(live_entity, "remove"):
             live_entity.remove()
         return snapshot
 
