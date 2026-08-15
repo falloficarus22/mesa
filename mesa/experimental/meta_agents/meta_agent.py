@@ -103,9 +103,23 @@ def find_combinations(
 ) -> list[tuple[tuple[Agent, ...], float]]:
     """Find candidate agent groups and score them with ``evaluation_func``.
 
+<<<<<<< HEAD
     The helper is retained for existing examples that discover potential
     meta-agents before creating them. It deliberately does not mutate model or
     membership state.
+=======
+    Args:
+        model: The model instance.
+        group: The set of agents to find combinations in.
+        size: The size or range of sizes for combinations. Defaults to (2, 5).
+        evaluation_func: The function to evaluate combinations. Defaults to None.
+        filter_func: Allows the user to specify how agents are filtered to form groups.
+          Defaults to None.
+
+    Returns:
+        List: The list of valuable combinations, in a tuple first agentset of valuable combination  and then the value of
+        the combination.
+>>>>>>> origin/main
     """
     if isinstance(size, int):
         size_range = range(size, size + 1)
@@ -291,10 +305,28 @@ def create_meta_agent(
 ) -> Any | None:
     """Legacy helper for creating a meta-agent instance.
 
+<<<<<<< HEAD
     This function preserves the historical API and object-level compatibility
     mirrors. It does not own canonical membership bookkeeping; use
     ``MetaAgents.create`` when memberships should be recorded in a
     ``MembershipBackend``.
+=======
+    Args:
+        model: The model instance.
+        new_agent_class: The name of the new meta-agent class.
+        agents: The agents to be included in the meta-agent.
+        mesa_agent_type: The Mesa Agent (sub)class the new meta-agent should
+            inherit from. If falsy, defaults to Agent.
+        meta_attributes: Attributes to be added to the meta-agent.
+        meta_methods: Methods to be added to the meta-agent.
+        assume_constituting_agent_methods: Whether to assume methods from
+            constituting-agents as meta_agent methods.
+        assume_constituting_agent_attributes: Whether to retain attributes
+            from constituting-agents.
+
+    Returns:
+        MetaAgent instance
+>>>>>>> origin/main
     """
     return _create_meta_agent_instance(
         model,
