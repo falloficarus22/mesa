@@ -406,20 +406,48 @@ class MetaAgent(Agent):
             ) from None
 
     def add_constituting_agents(self, new_agents: Iterable[Agent]) -> None:
-        """Add component agents and update legacy compatibility mirrors."""
+        """Add component agents through the model's membership facade."""
+        meta_agents_api = getattr(self.model, "meta_agents", None)
+        if meta_agents_api is not None:
+            for agent in new_agents:
+                meta_agents_api.add_member(self, agent)
+            return
+        self._add_constituting_agents_locally(new_agents)
+
+    def _add_constituting_agents_locally(self, new_agents: Iterable[Agent]) -> None:
+        """Update the component and compatibility mirrors without backend mutation."""
         for agent in new_agents:
             self._constituting_set.add(agent)
             _attach_meta_agent(agent, self)
 
     def remove_constituting_agents(self, remove_agents: Iterable[Agent]) -> None:
-        """Remove component agents and update legacy compatibility mirrors."""
+        """Remove component agents through the model's membership facade."""
+        meta_agents_api = getattr(self.model, "meta_agents", None)
+        if meta_agents_api is not None:
+            for agent in remove_agents:
+                meta_agents_api.remove_member(self, agent)
+            return
+        self._remove_constituting_agents_locally(remove_agents)
+
+    def _remove_constituting_agents_locally(
+        self, remove_agents: Iterable[Agent]
+    ) -> None:
+        """Update the component and compatibility mirrors without backend mutation."""
         for agent in remove_agents:
             self._constituting_set.discard(agent)
             _detach_meta_agent(agent, self)
 
     def remove(self) -> None:
-        """Remove this meta-agent and clear live references from components."""
-        self.remove_constituting_agents(set(self._constituting_set))
+        """Remove this meta-agent through the model's membership facade."""
+        meta_agents_api = getattr(self.model, "meta_agents", None)
+        if meta_agents_api is not None:
+            meta_agents_api.dissolve(self)
+            return
+        self._remove_from_model()
+
+    def _remove_from_model(self) -> None:
+        """Remove this agent after backend memberships have been detached."""
+        self._remove_constituting_agents_locally(set(self._constituting_set))
         super().remove()
 
     def step(self) -> None:

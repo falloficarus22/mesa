@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable
 
 RelationKey = Hashable
 Triplet = tuple[Hashable, Hashable, RelationKey]
@@ -21,12 +21,27 @@ class MembershipBackend:
     def __init__(self) -> None:
         """Initialize empty triplet storage and bidirectional indexes."""
         self._triplets: set[Triplet] = set()
+        self._listeners: list[Callable[[str, Triplet], None]] = []
         self._by_agent: dict[Hashable, set[tuple[Hashable, RelationKey]]] = defaultdict(
             set
         )
         self._by_group: dict[Hashable, set[tuple[Hashable, RelationKey]]] = defaultdict(
             set
         )
+
+    def add_listener(self, listener: Callable[[str, Triplet], None]) -> None:
+        """Register a callback invoked after a membership mutation.
+
+        Listeners receive ``"added"`` or ``"removed"`` plus the normalized
+        membership triplet. This lets an owning object keep the derived views in
+        sync without making the backend dependent on live Mesa agents.
+        """
+        self._listeners.append(listener)
+
+    def _notify(self, action: str, triplet: Triplet) -> None:
+        """Notify listeners after a successful membership mutation."""
+        for listener in tuple(self._listeners):
+            listener(action, triplet)
 
     def _to_id(self, entity: Hashable) -> Hashable:
         """Normalize entity to canonical ID.
@@ -48,6 +63,7 @@ class MembershipBackend:
         self._triplets.add(triplet)
         self._by_agent[agent_id].add((group_id, relation))
         self._by_group[group_id].add((agent_id, relation))
+        self._notify("added", triplet)
 
     def bulk_add(self, memberships: Iterable[Triplet]) -> None:
         """Add many typed membership edges."""
@@ -72,6 +88,7 @@ class MembershipBackend:
         self._by_group[group_id].discard((agent_id, relation))
         if not self._by_group[group_id]:
             del self._by_group[group_id]
+        self._notify("removed", triplet)
 
     def replace_relation(
         self,

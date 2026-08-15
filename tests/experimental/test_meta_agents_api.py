@@ -37,6 +37,46 @@ def test_meta_agents_create_records_backend_memberships():
     assert view.memberships[0].group is meta_agent
 
 
+def test_meta_agents_installs_one_authoritative_facade_per_model():
+    """The model exposes the facade used by all relationship mutators."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+
+    assert model.meta_agents is meta_agents
+    with pytest.raises(RuntimeError, match="only one MetaAgents facade"):
+        MetaAgents(model)
+
+
+def test_raw_backend_mutations_keep_live_mirrors_synchronized():
+    """Backend changes must not leave ``MetaAgent`` compatibility stale state."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    group = meta_agents.create("Group", [], Agent)
+
+    meta_agents.backend.add_membership(member, group, "member")
+    assert member in group.agents
+    assert group in member.meta_agents
+
+    meta_agents.backend.remove_membership(member, group, "member")
+    assert member not in group.agents
+    assert group not in member.meta_agents
+
+
+def test_legacy_group_mutators_backend_when_facade_is_installed():
+    """Legacy methods delegate to the facade rather than bypassing its graph."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    group = meta_agents.create("Group", [], Agent)
+
+    group.add_constituting_agents({member})
+    assert meta_agents.backend.groups_of(member) == {group.unique_id}
+
+    group.remove_constituting_agents({member})
+    assert meta_agents.backend.groups_of(member) == set()
+
+
 def test_meta_agents_remove_member_preserves_overlapping_memberships():
     """Removing one relation should keep unrelated memberships intact."""
     model = Model()

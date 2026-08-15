@@ -66,9 +66,15 @@ class MetaAgents:
     """Public meta-agents interface over :class:`MembershipBackend`."""
 
     def __init__(self, model: Any, backend: MembershipBackend | None = None) -> None:
-        """Create a meta-agents API bound to one model."""
+        """Create and install the one meta-agents API bound to the ``model``."""
+        existing_api = getattr(model, "meta_agents", None)
+        if existing_api is not None and existing_api is not self:
+            raise RuntimeError("A model can have only one MetaAgents facade.")
+
         self.model = model
         self.backend = backend or MembershipBackend()
+        self.backend.add_listener(self._sync_live_membership)
+        model.meta_agents = self
 
     def _entity_id(self, entity: Hashable) -> Hashable:
         """Return the backend identity for a live entity or hashable external id."""
@@ -86,6 +92,38 @@ class MetaAgents:
     def _resolve_entity(self, entity_id: Hashable) -> Any:
         """Resolve a backend id back to a live object when possible."""
         return self._live_entity_lookup().get(entity_id, entity_id)
+
+    def _add_live_member(self, group: Any, member: Any) -> None:
+        """Update a group's compatibility mirror without changing the backend."""
+        local_add = getattr(group, "_add_constituting_agents_locally", None)
+        if local_add is not None:
+            local_add({member})
+        elif hasattr(group, "add_constituting_agents"):
+            group.add_constituting_agents({member})
+
+    def _remove_live_member(self, group: Any, member: Any) -> None:
+        """Update a group's compatiblity mirror without changing the backend."""
+        local_remove = getattr(group, "_remove_constituting_agents_locally", None)
+        if local_remove is not None:
+            local_remove({member})
+        elif hasattr(group, "remove_constituting_agents"):
+            group.remove_constituting_agents({member})
+
+    def _sync_live_membership(self, action: str, triplet: Triplet) -> None:
+        """Keep live compatibility mirrors synchronized with backend mutations."""
+        agent_id, group_id, _relation = triplet
+        lookup = self._live_entity_lookup()
+        member = lookup.get(agent_id)
+        group = lookup.get(group_id)
+        if member is None or group is None:
+            return
+
+        if action == "added":
+            # Multiple typed edges represent one live object membership.
+            if len(self.backend.relations_between(member, group)) == 1:
+                self._add_live_member(group, member)
+        elif action == "removed" and not self.backend.relations_between(member, group):
+            self._remove_live_member(group, member)
 
     def _resolve_view(
         self, entity: Hashable, triplets: Iterable[Triplet]
@@ -120,12 +158,6 @@ class MetaAgents:
 
         self.backend.remove_agent(entity)
         self.backend.remove_group(entity)
-
-        for edge in snapshot.memberships:
-            group = edge.group
-            member = edge.agent
-            if hasattr(group, "remove_constituting_agents"):
-                group.remove_constituting_agents({member})
 
         return snapshot
 
@@ -177,11 +209,7 @@ class MetaAgents:
         relation: RelationKey = "member",
     ) -> MembershipView:
         """Add one member to one group and keep the object layer in sync."""
-        already_linked = bool(self.backend.relations_between(member, group))
         self.backend.add_membership(member, group, relation)
-
-        if not already_linked and hasattr(group, "add_constituting_agents"):
-            group.add_constituting_agents({member})
 
         return self.query_memberships(member)
 
@@ -193,11 +221,6 @@ class MetaAgents:
     ) -> MembershipView:
         """Remove one member from one group and keep the object layer in sync."""
         self.backend.remove_membership(member, group, relation)
-
-        if not self.backend.relations_between(member, group) and hasattr(
-            group, "remove_constituting_agents"
-        ):
-            group.remove_constituting_agents({member})
 
         return self.query_memberships(member)
 
@@ -218,7 +241,10 @@ class MetaAgents:
         """Remove an entity's memberships and delete it from the model when possible."""
         snapshot = self._detach_entity(entity)
         live_entity = self._resolve_entity(self._entity_id(entity))
-        if hasattr(live_entity, "remove"):
+        local_remove = getattr(live_entity, "_remove_from_model", None)
+        if local_remove is not None:
+            local_remove()
+        elif hasattr(live_entity, "remove"):
             live_entity.remove()
         return snapshot
 
