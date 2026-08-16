@@ -8,9 +8,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from mesa.agent import Agent, AgentSet
+from mesa.experimental.mesa_signals import ModelSignals
 
 from .backend import MembershipBackend, RelationKey, Triplet
-from .meta_agent import MetaAgent, _create_meta_agent_instance
+from .meta_agent import (
+    MetaAgent,
+    _create_meta_agent_instance,
+    _deduplicate_preserving_order,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,7 +68,15 @@ class MembershipView:
 
 
 class MetaAgents:
-    """Public meta-agents interface over :class:`MembershipBackend`."""
+    """Public meta-agents interface over :class:`MembershipBackend`.
+
+    The backend is authoritative for typed memberships. Mutate relationships
+    through this facade (``create``, ``add_member``, ``remove_member``,
+    ``deactivate``, ``dissolve``). Bound ``MetaAgent`` mutators delegate here.
+    Raw ``backend`` writes update the graph only; they do not refresh
+    ``MetaAgent.agents`` or ``agent.meta_agents``. Removing an agent from the
+    model deactivates its memberships.
+    """
 
     def __init__(self, model: Any, backend: MembershipBackend | None = None) -> None:
         """Create a meta-agents API bound to one model."""
@@ -77,6 +90,15 @@ class MetaAgents:
         self.model = model
         self.backend = backend or MembershipBackend()
         model.meta_agents = self
+
+        self.model.observe("agents", ModelSignals.AGENT_REMOVED, self._on_agent_removed)
+
+    def _on_agent_removed(self, signal) -> None:
+        """Deactivate memberships when a live agent leaves the model."""
+        args = signal.additional_kwargs.get("args") or ()
+        if not args:
+            return
+        self.deactivate(args[0])
 
     def _entity_id(self, entity: Hashable) -> Hashable:
         """Return the backend identity for a live entity or hashable external id."""
@@ -125,13 +147,28 @@ class MetaAgents:
     def _detach_entity(self, entity: Hashable) -> MembershipView:
         """Remove all incident memberships and update live objects when available."""
         snapshot = self.query_memberships(entity)
+        entity_id = self._entity_id(entity)
+        live_entity = (
+            entity if isinstance(entity, Agent) else self._resolve_entity(entity_id)
+        )
+        lookup = self._live_entity_lookup()
+        if isinstance(live_entity, Agent):
+            lookup[entity_id] = live_entity
 
         self.backend.remove_agent(entity)
         self.backend.remove_group(entity)
 
         for edge in snapshot.memberships:
-            group = edge.group
-            member = edge.agent
+            group = (
+                edge.group
+                if hasattr(edge.group, "_remove_constituting_agents_mirror")
+                else lookup.get(self._entity_id(edge.group), edge.group)
+            )
+            member = (
+                edge.agent
+                if isinstance(edge.agent, Agent)
+                else lookup.get(self._entity_id(edge.agent), edge.agent)
+            )
             if isinstance(member, Agent) and hasattr(
                 group, "_remove_constituting_agents_mirror"
             ):
@@ -152,10 +189,13 @@ class MetaAgents:
         memberships: Iterable[tuple[Any, RelationKey]] | None = None,
     ) -> Any | None:
         """Create a meta-agent and record its memberships in the backend."""
-        agents = list(agents)
         member_relations = list(memberships) if memberships is not None else None
-        if member_relations is not None and not agents:
-            agents = [member for member, _ in member_relations]
+        if member_relations is not None:
+            agents = _deduplicate_preserving_order(
+                member for member, _ in member_relations
+            )
+        else:
+            agents = _deduplicate_preserving_order(agents)
 
         meta_agent = _create_meta_agent_instance(
             self.model,
@@ -188,13 +228,16 @@ class MetaAgents:
         relation: RelationKey = "member",
     ) -> MembershipView:
         """Add one member to one group and keep the object layer in sync."""
-        already_linked = bool(self.backend.relations_between(member, group))
+        lookup = self._live_entity_lookup()
+        member = lookup.get(self._entity_id(member), member)
+        group = lookup.get(self._entity_id(group), group)
+
         self.backend.add_membership(member, group, relation)
 
         if (
-            not already_linked
-            and isinstance(member, Agent)
+            isinstance(member, Agent)
             and hasattr(group, "_add_constituting_agents_mirror")
+            and member not in group
         ):
             group._add_constituting_agents_mirror({member})
 
@@ -207,6 +250,10 @@ class MetaAgents:
         relation: RelationKey = "member",
     ) -> MembershipView:
         """Remove one member from one group and keep the object layer in sync."""
+        lookup = self._live_entity_lookup()
+        member = lookup.get(self._entity_id(member), member)
+        group = lookup.get(self._entity_id(group), group)
+
         self.backend.remove_membership(member, group, relation)
 
         if (

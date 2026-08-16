@@ -164,7 +164,6 @@ class MultiLevelAllianceModel(mesa.Model):
             agents_by_level.setdefault(agent.level, []).append(agent)
 
         for similar_agents in agents_by_level.values():
-
             # Find the best combinations using find_combinations
             if (
                 len(similar_agents) > 1

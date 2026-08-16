@@ -104,10 +104,97 @@ def test_dissolve_skips_mirror_updates_for_already_removed_members():
 
     assert group is not None
     agent.remove()
+    assert meta_agents.backend.as_triplets() == set()
+    assert agent not in group
     group.remove()
 
     assert meta_agents.backend.as_triplets() == set()
     assert group not in model.agents
+
+
+def test_create_memberships_is_authoritative_over_agents_list():
+    """When memberships= is given, it replaces the agents list for both layers."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    listed = Agent(model)
+    actual = Agent(model)
+    group = meta_agents.create(
+        "Group",
+        [listed],
+        Agent,
+        memberships=[(actual, "member")],
+    )
+    assert group is not None
+    assert listed not in group
+    assert actual in group
+    assert group in actual.meta_agents
+    assert group not in getattr(listed, "meta_agents", set())
+    assert meta_agents.backend.as_triplets() == {
+        (actual.unique_id, group.unique_id, "member")
+    }
+
+
+def test_member_remove_deactivates_memberships_and_mirrors():
+    """Removing a member from the model deactivates its memberships and mirrors."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    other = Agent(model)
+    group = meta_agents.create("Group", [member, other], Agent)
+    assert group is not None
+    member.remove()
+    assert meta_agents.backend.groups_of(member) == set()
+    assert member not in group
+    assert group not in getattr(member, "meta_agents", set())
+    assert other in group
+    assert group in other.meta_agents
+    assert member not in model.agents
+    assert group in model.agents
+
+
+def test_meta_agent_remove_still_dissolves_after_agent_removed_signal():
+    """Bound group.remove() still dissolves after AGENT_REMOVED fires."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    group = meta_agents.create("Group", [member], Agent)
+    assert group is not None
+    group.remove()
+    assert meta_agents.backend.as_triplets() == set()
+    assert group not in model.agents
+    assert group not in member.meta_agents
+
+
+def test_add_member_heals_mirror_after_backend_only_edge():
+    """A second typed edge via the facade heals the live constituting set."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    group = meta_agents.create("Group", [], Agent)
+    assert group is not None
+    meta_agents.backend.add_membership(member, group, "ally")
+    assert member not in group
+    meta_agents.add_member(group, member, relation="member")
+    assert meta_agents.backend.relations_between(member, group) == {"ally", "member"}
+    assert member in group
+    assert group in member.meta_agents
+
+
+def test_add_and_remove_member_by_unique_id_updates_mirrors():
+    """add_member/remove_member resolve unique_ids to live objects for mirrors."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    member = Agent(model)
+    group = meta_agents.create("Group", [], Agent)
+    assert group is not None
+    meta_agents.add_member(group, member.unique_id)
+    assert member in group
+    assert group in member.meta_agents
+    assert meta_agents.backend.groups_of(member) == {group.unique_id}
+    meta_agents.remove_member(group.unique_id, member.unique_id)
+    assert member not in group
+    assert group not in member.meta_agents
+    assert meta_agents.backend.groups_of(member) == set()
 
 
 def test_legacy_remove_default_relation_keeps_other_relation_and_mirror():

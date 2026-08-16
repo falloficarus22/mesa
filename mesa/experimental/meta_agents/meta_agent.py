@@ -104,11 +104,10 @@ def find_combinations(
 ) -> list[tuple[tuple[Agent, ...], float]]:
     """Find candidate agent groups and score them with ``evaluation_func``.
 
-<<<<<<< HEAD
     The helper is retained for existing examples that discover potential
     meta-agents before creating them. It deliberately does not mutate model or
     membership state.
-=======
+
     Args:
         model: The model instance.
         group: The set of agents to find combinations in.
@@ -120,7 +119,6 @@ def find_combinations(
     Returns:
         List: The list of valuable combinations, in a tuple first agentset of valuable combination  and then the value of
         the combination.
->>>>>>> origin/main
     """
     if isinstance(size, int):
         size_range = range(size, size + 1)
@@ -316,12 +314,11 @@ def create_meta_agent(
 ) -> Any | None:
     """Legacy helper for creating a meta-agent instance.
 
-<<<<<<< HEAD
     This function preserves the historical API and object-level compatibility
     mirrors. It does not own canonical membership bookkeeping; use
     ``MetaAgents.create`` when memberships should be recorded in a
     ``MembershipBackend``.
-=======
+
     Args:
         model: The model instance.
         new_agent_class: The name of the new meta-agent class.
@@ -337,7 +334,6 @@ def create_meta_agent(
 
     Returns:
         MetaAgent instance
->>>>>>> origin/main
     """
     if getattr(model, "meta_agents", None) is not None:
         raise RuntimeError(
@@ -377,7 +373,9 @@ class MetaAgent(Agent):
                 "Use model.meta_agents.create() when a MetaAgents facade is installed"
             )
         if _membership_api is not None and installed_api is not _membership_api:
-            raise RuntimeError("Meta-agent must be created by its model's MetaAgents facade")
+            raise RuntimeError(
+                "Meta-agent must be created by its model's MetaAgents facade"
+            )
         if initial_attributes:
             for key, value in initial_attributes.items():
                 object.__setattr__(self, key, value)
