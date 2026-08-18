@@ -16,7 +16,6 @@ Mesa 4.0 follows through on deprecations announced in Mesa 3.x by removing sever
 - **`mesa.space` removed** (#3337): The legacy space module and `agent.pos` have been removed. Use `mesa.discrete_space` for grid-based and network models.
 - **`PropertyLayer` and `HasPropertyLayers` mixin removed** (#3340, #3432): The standalone `PropertyLayer` class is replaced by raw NumPy arrays stored directly on the grid as `property_layers`. Property access on cells now uses native property closures on a dynamic `GridCell` class, simplifying the internals.
 - **Simulator classes removed** (#3530): The `Simulator`, `ABMSimulator`, and `DEVSimulator` classes and the entire `mesa.experimental.devs` package have been removed, completing the deprecation cycle started in Mesa 3.5.0. Their functionality is covered by `model.run_for()`, `model.run_until()`, `model.schedule_event()`, and `model.schedule_recurring()`. Note that the core event system remains fully functional in `mesa.time`.
-- **Meta-agents graduated** : `mesa.experimental.meta_agents` is now `mesa.meta_agents`. Membership is mutated only through `model.meta_agents`. The old `create_meta_agent` factory, singular `agent.meta_agent` pointer, `agent.meta_agents` set, and `constituting_*` mutators have been removed.
 
 ### Experimental: Timed agent actions
 Mesa 4.0a0 introduces an experimental `Action` system (#3461), giving agents a built-in concept of *doing something over time*. Actions integrate with Mesa's event scheduling for precise timing, support interruption with progress tracking, and can be resumed.
