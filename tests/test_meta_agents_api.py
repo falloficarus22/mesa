@@ -1,4 +1,4 @@
-"""Tests for the public meta-agents API."""
+"""Tests for the meta-agents membership manager."""
 
 import pytest
 
@@ -7,8 +7,8 @@ from mesa.agent import AgentSet
 from mesa.meta_agents import MembershipEdge, MembershipView, MetaAgents
 
 
-def test_meta_agents_create_records_backend_memberships():
-    """Create should return live objects and record backend triplets."""
+def test_meta_agents_create_records_memberships():
+    """Create should return live objects and record memberships."""
     model = Model()
     meta_agents = MetaAgents(model)
     agent_1 = Agent(model)
@@ -32,13 +32,13 @@ def test_meta_agents_create_records_backend_memberships():
     assert view.memberships[0].group is meta_agent
 
 
-def test_meta_agents_installs_one_authoritative_facade_per_model():
-    """A model can have only one facade."""
+def test_meta_agent_has_one_membership_manager():
+    """A model can have only one membership manager."""
     model = Model()
     meta_agents = MetaAgents(model)
 
     assert model.meta_agents is meta_agents
-    with pytest.raises(RuntimeError, match="different MetaAgents facade"):
+    with pytest.raises(RuntimeError, match="different membership manager"):
         MetaAgents(model)
 
 
@@ -64,7 +64,7 @@ def test_members_of_and_groups_of():
     assert set(meta_agents.groups_of(agent_2)) == set()
 
 
-def test_create_memberships_is_authoritative_over_agents_list():
+def test_create_memberships_overrides_agents_list():
     """When memberships= is given, it replaces the agents list."""
     model = Model()
     meta_agents = MetaAgents(model)
@@ -111,6 +111,30 @@ def test_meta_agent_remove_still_dissolves_after_agent_removed_signal():
     assert meta_agents.backend.as_triplets() == set()
     assert group not in model.agents
     assert group not in meta_agents.groups_of(member)
+
+
+def test_add_and_remove_member_by_group_name():
+    """add_member/remove_member/members_of resolve a group by create() name."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    alice = Agent(model)
+    bob = Agent(model)
+    carol = Agent(model)
+    team = meta_agents.create("Team", [alice, bob], Agent)
+
+    meta_agents.add_member("Team", carol)
+    assert set(meta_agents.members_of("Team")) == {alice, bob, carol}
+    assert team in meta_agents.groups_of(carol)
+
+    meta_agents.remove_member("Team", alice)
+    assert set(meta_agents.members_of("Team")) == {bob, carol}
+
+    with pytest.raises(ValueError, match="No group named"):
+        meta_agents.add_member("Missing", carol)
+
+    meta_agents.create("Team", [Agent(model)], Agent)
+    with pytest.raises(ValueError, match="Ambiguous group name"):
+        meta_agents.add_member("Team", carol)
 
 
 def test_add_and_remove_member_by_unique_id():

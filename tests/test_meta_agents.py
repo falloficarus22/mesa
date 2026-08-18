@@ -28,7 +28,7 @@ class CustomAgent(Agent):
 
 @pytest.fixture
 def setup_agents():
-    """Set up the model, facade, and agents for testing."""
+    """Set up the model, membership manager, and agents for testing."""
     model = Model()
     MetaAgents(model)
     agent1 = CustomAgent(model)
@@ -196,7 +196,7 @@ def test_find_combinations_without_evaluation_func(setup_agents):
     assert result == []
 
 
-def test_meta_agent_constructor_requires_facade():
+def test_meta_agent_constructor_requires_membership_manager():
     """Direct MetaAgent construction is rejected."""
     model = Model()
     with pytest.raises(RuntimeError, match=r"model\.meta_agents\.create"):

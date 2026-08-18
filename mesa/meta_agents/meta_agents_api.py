@@ -1,4 +1,4 @@
-"""Public meta-agents API for typed overlapping memberships."""
+"""Membership manager for meta-agents."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from .meta_agent import (
 
 @dataclass(frozen=True, slots=True)
 class MembershipEdge:
-    """A user-facing membership edge with live objects instead of backend ids."""
+    """A membership edge with live agent and group objects."""
 
     agent: Any
     group: Any
@@ -62,19 +62,18 @@ class MembershipView:
 
 
 class MetaAgents:
-    """Public meta-agents interface over :class:`MembershipBackend`.
+    """Membership manager for agents composed of other agents.
 
-    The backend is authoritative for typed memberships. Mutate relationships
-    through this facade (``create``, ``add_member``, ``remove_member``,
-    ``deactivate``, ``dissolve``). Removing an agent from the model deactivates
-    its memberships.
+    Tracks who belongs to which group. Change memberships with ``create``,
+    ``add_member``, ``remove_member``, ``deactivate``, and ``dissolve``.
+    Removing an agent from the model also removes its memberships.
     """
 
     def __init__(self, model: Any, backend: MembershipBackend | None = None) -> None:
-        """Create a meta-agents API bound to one model."""
+        """Create a membership manager bound to one model."""
         existing_api = getattr(model, "meta_agents", None)
         if existing_api is not None and existing_api is not self:
-            raise RuntimeError("Model already has a different MetaAgents facade")
+            raise RuntimeError("Model already has a different membership manager")
         self.model = model
         self.backend = backend or MembershipBackend()
         model.meta_agents = self
@@ -104,6 +103,28 @@ class MetaAgents:
     def _resolve_entity(self, entity_id: Hashable) -> Any:
         """Resolve a backend id back to a live object when possible."""
         return self._live_entity_lookup().get(entity_id, entity_id)
+
+    def _resolve_group(self, group: Hashable) -> Any:
+        """Resolve a group from a live object, unique id, or group name."""
+        lookup = self._live_entity_lookup()
+        entity_id = self._entity_id(group)
+        if entity_id in lookup:
+            return lookup[entity_id]
+        if isinstance(group, str):
+            matches = list(
+                dict.fromkeys(
+                    entity
+                    for entity in self.model.agents
+                    if getattr(entity, "name", None) == group
+                    or entity.__class__.__name__ == group
+                )
+            )
+            if len(matches) == 1:
+                return matches[0]
+            if not matches:
+                raise ValueError(f"No group named {group!r}")
+            raise ValueError(f"Ambiguous group name {group!r}")
+        return group
 
     def _resolve_view(
         self, entity: Hashable, triplets: Iterable[Triplet]
@@ -149,7 +170,7 @@ class MetaAgents:
         relation: RelationKey = "member",
         memberships: Iterable[tuple[Any, RelationKey]] | None = None,
     ) -> Any:
-        """Create a meta-agent and record its memberships in the backend."""
+        """Create a meta-agent and record its memberships."""
         member_relations = list(memberships) if memberships is not None else None
         if member_relations is not None:
             agents = _deduplicate_preserving_order(
@@ -186,7 +207,7 @@ class MetaAgents:
         """Add one member to one group."""
         lookup = self._live_entity_lookup()
         member = lookup.get(self._entity_id(member), member)
-        group = lookup.get(self._entity_id(group), group)
+        group = self._resolve_group(group)
 
         self.backend.add_membership(member, group, relation)
         return self.query_memberships(member)
@@ -200,7 +221,7 @@ class MetaAgents:
         """Remove one member from one group."""
         lookup = self._live_entity_lookup()
         member = lookup.get(self._entity_id(member), member)
-        group = lookup.get(self._entity_id(group), group)
+        group = self._resolve_group(group)
 
         self.backend.remove_membership(member, group, relation)
         return self.query_memberships(member)
@@ -209,6 +230,7 @@ class MetaAgents:
         self, group: Hashable, relation: RelationKey | None = None
     ) -> AgentSet:
         """Return the live members of one group as an AgentSet."""
+        group = self._resolve_group(group)
         lookup = self._live_entity_lookup()
         members = [
             lookup[member_id]
@@ -279,8 +301,8 @@ class MetaAgents:
         level : int
             Non-negative containment depth relative to ``root``.
         root : Hashable
-            Hierarchy root (live agent or backend id). Must be registered on
-            this façade's model.
+            Hierarchy root (live agent or unique id). Must be registered on
+            this model's membership manager.
         relation : RelationKey or None, default ``"member"``
             Membership relation to traverse. ``None`` includes all relations.
 

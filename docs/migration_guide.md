@@ -10,7 +10,7 @@ Install the 4.0 pre-release with `pip install -U --pre "mesa[rec]"` — plain `p
 
 ### Experimental meta-agents moved to `mesa.meta_agents`
 
-`mesa.experimental.meta_agents` has graduated to `mesa.meta_agents`. The old object-level API (`create_meta_agent`, unbound `MetaAgent(...)`, `agent.meta_agent`, `agent.meta_agents`, and `constituting_*` mutators) is gone. Membership is stored in a typed backend and read or written only through `model.meta_agents`.
+Import meta-agents from `mesa.meta_agents`. The old helpers (`create_meta_agent`, unbound `MetaAgent(...)`, `agent.meta_agent`, `agent.meta_agents`, and `constituting_*` mutators) are gone. A membership manager on the model tracks who belongs to which group; read and write memberships only through `model.meta_agents`.
 
 ```python
 # Old
@@ -25,10 +25,10 @@ list(group.agents)
 from mesa.meta_agents import MetaAgents
 
 model.meta_agents = MetaAgents(model)
-group = model.meta_agents.create("Team", [alice, bob], Agent)
+model.meta_agents.create("Team", [alice, bob], Agent)
 model.meta_agents.groups_of(alice)
-model.meta_agents.add_member(group, carol)
-model.meta_agents.members_of(group)
+model.meta_agents.add_member("Team", carol)
+model.meta_agents.members_of("Team")
 ```
 
 `find_combinations` and `evaluate_combination` remain as discovery helpers and are now imported from `mesa.meta_agents`. The warehouse example in [mesa-examples](https://github.com/mesa/mesa-examples) still uses the old factory and needs a matching update.

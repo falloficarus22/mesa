@@ -199,4 +199,4 @@ class MultiLevelAllianceModel(mesa.Model):
                             size=(meta.level + 1) * 300,
                             level=meta.level,
                         )
-                        self.add_link(meta, self.meta_agents.members_of(meta))
+                        self.add_link(meta, alliance_members)

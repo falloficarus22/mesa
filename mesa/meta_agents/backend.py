@@ -1,6 +1,6 @@
-"""Backend foundation for typed overlapping meta-agent memberships.
+"""Storage for overlapping meta-agent memberships.
 
-- Canonical typed membership representation
+- Membership edges (agent, group, relation)
 - Safe update operations
 - Invariant checks
 """
@@ -15,7 +15,7 @@ Triplet = tuple[Hashable, Hashable, RelationKey]
 
 
 class MembershipBackend:
-    """Canonical backend for typed overlapping memberships."""
+    """Store of overlapping memberships."""
 
     def __init__(self) -> None:
         """Initialize empty triplet storage and bidirectional indexes."""
@@ -38,7 +38,7 @@ class MembershipBackend:
     def add_membership(
         self, agent: Hashable, group: Hashable, relation: RelationKey
     ) -> None:
-        """Add one typed membership edge if it does not already exist."""
+        """Add one membership edge if it does not already exist."""
         agent_id = self._to_id(agent)
         group_id = self._to_id(group)
         triplet = (agent_id, group_id, relation)
@@ -49,14 +49,14 @@ class MembershipBackend:
         self._by_group[group_id].add((agent_id, relation))
 
     def bulk_add(self, memberships: Iterable[Triplet]) -> None:
-        """Add many typed membership edges."""
+        """Add many membership edges."""
         for agent, group, relation in memberships:
             self.add_membership(agent, group, relation)
 
     def remove_membership(
         self, agent: Hashable, group: Hashable, relation: RelationKey
     ) -> None:
-        """Remove one typed membership edge if present."""
+        """Remove one membership edge if present."""
         agent_id = self._to_id(agent)
         group_id = self._to_id(group)
         triplet = (agent_id, group_id, relation)

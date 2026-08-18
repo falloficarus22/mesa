@@ -1,8 +1,7 @@
 """Internal meta-agent group object and discovery helpers.
 
-Meta-agents are agents composed of other agents. Membership is stored in
-:class:`mesa.meta_agents.backend.MembershipBackend` and mutated only through
-:class:`mesa.meta_agents.meta_agents_api.MetaAgents`. This module holds the
+Meta-agents are agents composed of other agents. Memberships are tracked by
+the model's membership manager (``model.meta_agents``). This module holds the
 internal group ``Agent`` subclass and combination-discovery helpers.
 """
 
@@ -185,7 +184,7 @@ def _create_meta_agent_instance(
     if meta_agent is not None:
         existing_api = getattr(meta_agent, "_membership_api", None)
         if existing_api not in (None, _membership_api):
-            raise RuntimeError("Meta-agent is bound to a different MetaAgents facade")
+            raise RuntimeError("Meta-agent is bound to a different membership manager")
         meta_agent._membership_api = _membership_api
         _apply_meta_attributes(meta_agent, meta_attributes)
         _apply_meta_methods(meta_agent, meta_methods)
@@ -210,7 +209,7 @@ class MetaAgent(Agent):
     """Internal agent subclass used as a live group object.
 
     Construct instances through ``model.meta_agents.create``. Membership
-    reads and writes go through the facade, not this class.
+    reads and writes go through the membership manager, not this class.
     """
 
     def __init__(
@@ -220,13 +219,13 @@ class MetaAgent(Agent):
         initial_attributes: dict[str, Any] | None = None,
         _membership_api: Any | None = None,
     ):
-        """Create a meta-agent group bound to a MetaAgents facade."""
+        """Create a meta-agent group bound to the model's membership manager."""
         if _membership_api is None:
             raise RuntimeError("Use model.meta_agents.create() to create a meta-agent")
         installed_api = getattr(model, "meta_agents", None)
         if installed_api is not _membership_api:
             raise RuntimeError(
-                "Meta-agent must be created by its model's MetaAgents facade"
+                "Meta-agent must be created by its model's membership manager"
             )
         if initial_attributes:
             for key, value in initial_attributes.items():
@@ -241,7 +240,7 @@ class MetaAgent(Agent):
         super().remove()
 
     def remove(self) -> None:
-        """Dissolve this group through the authoritative facade."""
+        """Dissolve this group through the membership manager."""
         self._membership_api.dissolve(self)
 
     def step(self) -> None:

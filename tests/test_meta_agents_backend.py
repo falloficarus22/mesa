@@ -1,4 +1,4 @@
-"""Tests for typed membership backend."""
+"""Tests for membership storage."""
 
 from mesa import Agent, Model
 from mesa.meta_agents import MetaAgents
@@ -19,7 +19,7 @@ def test_add_and_query():
     backend.assert_invariants()
 
 
-def test_typed_overlap_same_pair():
+def test_multiple_relations_same_pair():
     """Allow multiple relation labels on the same agent-group pair."""
     backend = MembershipBackend()
     backend.add_membership("a1", "g1", "member")

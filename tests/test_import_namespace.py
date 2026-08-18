@@ -63,7 +63,7 @@ def test_simulator_replacement_api_present():
         assert hasattr(mesa.time, name)
 
 
-def test_meta_agents_graduated_from_experimental():
+def test_meta_agents():
     """Meta-agents live at mesa.meta_agents, not mesa.experimental.meta_agents."""
     import mesa  # noqa: PLC0415
 
