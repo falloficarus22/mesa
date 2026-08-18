@@ -4,11 +4,8 @@ import numpy as np
 import mesa
 from mesa import Agent
 from mesa.examples.experimental.alliance_formation.agents import AllianceAgent
-from mesa.experimental.meta_agents import MetaAgents
-from mesa.experimental.meta_agents.meta_agent import (
-    find_combinations,
-)
 from mesa.experimental.scenarios import Scenario
+from mesa.meta_agents import MetaAgents, find_combinations
 
 
 class AllianceScenario(Scenario):
@@ -202,4 +199,4 @@ class MultiLevelAllianceModel(mesa.Model):
                             size=(meta.level + 1) * 300,
                             level=meta.level,
                         )
-                        self.add_link(meta, meta.agents)
+                        self.add_link(meta, self.meta_agents.members_of(meta))

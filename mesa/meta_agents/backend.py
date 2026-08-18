@@ -3,7 +3,6 @@
 - Canonical typed membership representation
 - Safe update operations
 - Invariant checks
-- Shared by the public meta-agents API and compatibility helpers
 """
 
 from __future__ import annotations

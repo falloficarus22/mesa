@@ -1,8 +1,8 @@
 """Tests for typed membership backend."""
 
 from mesa import Agent, Model
-from mesa.experimental.meta_agents.backend import MembershipBackend
-from mesa.experimental.meta_agents.meta_agent import MetaAgent
+from mesa.meta_agents import MetaAgents
+from mesa.meta_agents.backend import MembershipBackend
 
 
 def test_add_and_query():
@@ -34,12 +34,12 @@ def test_idempotent_add_and_remove():
     """Repeated add/remove call should remain safe and deterministic."""
     backend = MembershipBackend()
     backend.add_membership("a1", "g1", "member")
-    backend.add_membership("a1", "g1", "member")  # idempotent add
+    backend.add_membership("a1", "g1", "member")
 
     assert backend.as_triplets() == {("a1", "g1", "member")}
 
     backend.remove_membership("a1", "g1", "member")
-    backend.remove_membership("a1", "g1", "member")  # idempotent remove
+    backend.remove_membership("a1", "g1", "member")
     assert backend.as_triplets() == set()
     backend.assert_invariants()
 
@@ -96,15 +96,15 @@ def test_non_string_relation_key():
 
 
 def test_backend_uses_unique_ids_for_mesa_agents():
-    """Meta-agent membership bookkeeping should use unique_id values."""
+    """Membership bookkeeping should use unique_id values."""
     model = Model()
+    meta_agents = MetaAgents(model)
     agent = Agent(model)
-    meta_agent = MetaAgent(model, {agent}, name="Group")
-    backend = MembershipBackend()
+    group = meta_agents.create("Group", [agent], Agent)
 
-    backend.add_membership(agent, meta_agent, "member")
-
-    assert backend.as_triplets() == {(agent.unique_id, meta_agent.unique_id, "member")}
-    assert backend.groups_of(agent) == {meta_agent.unique_id}
-    assert backend.agents_of(meta_agent) == {agent.unique_id}
-    backend.assert_invariants()
+    assert meta_agents.backend.as_triplets() == {
+        (agent.unique_id, group.unique_id, "member")
+    }
+    assert meta_agents.backend.groups_of(agent) == {group.unique_id}
+    assert meta_agents.backend.agents_of(group) == {agent.unique_id}
+    meta_agents.backend.assert_invariants()
