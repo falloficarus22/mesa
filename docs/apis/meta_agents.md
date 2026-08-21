@@ -39,14 +39,14 @@ model.meta_agents = MetaAgents(model)
 
 alice = Agent(model)
 bob = Agent(model)
-team = model.meta_agents.create("Team", [alice, bob], Agent)
+team = model.meta_agents.create("Team", [alice, bob], Agent)  # create a group of agents
 
-model.meta_agents.add_member("Team", Agent(model))
-model.meta_agents.members_of("Team")
-model.meta_agents.groups_of(alice)
-model.meta_agents.query_memberships(alice)
-model.meta_agents.at_level(1, root=team)
-model.meta_agents.dissolve(team)
+model.meta_agents.add_member("Team", Agent(model))    # add members
+model.meta_agents.members_of("Team")                  # who belongs to a group
+model.meta_agents.groups_of(alice)                    # which groups an agent belongs to
+model.meta_agents.query_memberships(alice)            # full membership snapshot for one entity
+model.meta_agents.at_level(1, root=team)              # walk nested levels
+model.meta_agents.dissolve(team)                      # dissolve a group
 ```
 
 ```{eval-rst}
