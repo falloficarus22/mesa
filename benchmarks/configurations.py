@@ -138,8 +138,8 @@ configurations = {
         "large": {
             "replications": 10,
             "iterations": 3,
-            "steps": 20,
-            "scenario": AllianceScenario(n=120, mean=0.5, std_dev=0.1, rng=42),
+            "steps": 10,
+            "scenario": AllianceScenario(n=200, mean=0.5, std_dev=0.1, rng=42),
         },
     },
 }
