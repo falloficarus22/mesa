@@ -94,6 +94,10 @@ class MetaAgents:
 
     def _live_entity_lookup(self) -> dict[Hashable, Any]:
         """Build a lookup from backend ids back to live model objects."""
+        # TODO(perf): This rebuilds an O(N) mapping over every model agent on
+        # each call. Cache the lookup instead and only rebuild it on agent add
+        # or remove calls (e.g. via AGENT_ADDED/AGENT_REMOVED signals, seeding
+        # once in ``__init__``). Future optimization: bulk adds and removes.
         lookup: dict[Hashable, Any] = {}
         for entity in self.model.agents:
             entity_id = getattr(entity, "unique_id", None)
@@ -359,6 +363,9 @@ class MetaAgents:
 
         return AgentSet(at_depth, random=self.model.random)
 
+    # TODO(perf): Add a cache_build staticmethod so models that constantly
+    # reference the same sets of meta-agents can cache them instead of
+    # constantly rebuilding the lookup. More involved, so a future iteration.
     @staticmethod
     def evaluate_combination(
         candidate_group: tuple[Agent, ...],
