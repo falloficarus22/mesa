@@ -171,7 +171,72 @@ class MetaAgents:
         relation: RelationKey = "member",
         memberships: Iterable[tuple[Any, RelationKey]] | None = None,
     ) -> Any:
-        """Create a meta-agent and record its memberships."""
+        """Create a meta-agent group and record its memberships.
+
+        A group is identified by its class name, ``new_agent_class``. When at
+        least one of the given agents already belongs to an existing group
+        whose class name matches ``new_agent_class``, that group is reused:
+        the given agents are added to it and the existing group object is
+        returned. Otherwise a new group is created and registered as an agent
+        on the model. Note that calling ``create`` with the same class name
+        but no overlapping members therefore creates a second, distinct group
+        with the same name; name-based lookups (e.g. ``members_of("Team")``)
+        then raise because the name is ambiguous. To force a new group, use a
+        unique class name (e.g., append a timestamp or UUID). For an example
+        see the alliance_formation model.
+
+        Duplicate members are removed, preserving the order of first
+        appearance.
+
+        Args:
+            new_agent_class: The group's class name. A group with this name is
+                reused if any of ``agents`` already belongs to it; otherwise a
+                new group with this name is created.
+            agents: Initial members of the group.
+            mesa_agent_type: Mesa ``Agent`` class used as the base class of the
+                group agent. Ignored when an existing group is reused.
+            meta_attributes: Attributes to set on the group. When a group is
+                reused, these are set on the existing group.
+            meta_methods: Methods to bind to the group. When a group is
+                reused, these are bound to the existing group.
+            relation: Membership relation label for ``agents`` (default
+                ``"member"``). Ignored when ``memberships`` is given.
+            memberships: Alternative to ``agents``; a list of
+                ``(member, relation)`` tuples so each member can get its own
+                relation label. When given, ``agents`` and ``relation`` are
+                ignored.
+
+        Returns:
+            The group agent (newly created or existing).
+
+        Examples:
+            Create a new team with two members:
+
+            >>> team = model.meta_agents.create("Team", [alice, bob], Agent)
+
+            Add carol to the same team. Reuse requires at least one given
+            agent to already be in the group, so include an existing member:
+
+            >>> team2 = model.meta_agents.create("Team", [carol, alice], Agent)
+            >>> assert team is team2
+
+            This is the same as adding carol using ``add_member`` (more
+            explicit):
+
+            >>> model.meta_agents.add_member("Team", carol)
+            >>> assert carol in model.meta_agents.members_of("Team")
+
+            With the same class name but no overlapping members, a second,
+            distinct group is created:
+
+            >>> other_team = model.meta_agents.create("Team", [dave], Agent)
+            >>> assert other_team is not team
+
+            Force new groups by using unique names:
+
+            >>> team_a = model.meta_agents.create("Team_2026_A", [...], Agent)
+            >>> team_b = model.meta_agents.create("Team_2026_B", [...], Agent)
+        """
         member_relations = list(memberships) if memberships is not None else None
         if member_relations is not None:
             agents = _deduplicate_preserving_order(

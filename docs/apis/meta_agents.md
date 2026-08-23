@@ -50,6 +50,35 @@ model.meta_agents.dissolve(team)                      # dissolve a group
 model.meta_agents.find_combinations([alice, bob], evaluation_func=score)  # candidate groups
 ```
 
+## Group creation and reuse
+
+Groups are identified by their class name. `create` reuses an existing group
+only when at least one of the given agents already belongs to a group with
+that class name; the given agents are then added to it. Otherwise a new group
+is created. Calling `create` again with the same name but no overlapping
+members therefore creates a second, distinct group with the same name (which
+makes name-based lookups such as `members_of("Team")` ambiguous). To force a
+new group, use a unique class name (e.g., append a timestamp or UUID).
+
+```python
+team = model.meta_agents.create("Team", [alice, bob], Agent)
+
+# reuse: alice is already in the group, so carol is added to the same team
+team2 = model.meta_agents.create("Team", [carol, alice], Agent)
+assert team is team2
+
+# more explicit alternative:
+model.meta_agents.add_member("Team", carol)
+
+# same name, no overlapping members -> a second, distinct group
+other_team = model.meta_agents.create("Team", [dave], Agent)
+assert other_team is not team
+
+# unique names force distinct groups
+team_a = model.meta_agents.create("Team_2026_A", [alice], Agent)
+team_b = model.meta_agents.create("Team_2026_B", [dave], Agent)
+```
+
 ```{eval-rst}
 .. automodule:: mesa.meta_agents
    :members:
