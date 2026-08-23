@@ -101,8 +101,8 @@ def test_member_remove_deactivates_memberships():
     assert group in model.agents
 
 
-def test_meta_agent_remove_still_dissolves_after_agent_removed_signal():
-    """Bound group.remove() still dissolves after AGENT_REMOVED fires."""
+def test_meta_agent_remove_still_dissolves_after_agent_removal():
+    """Bound group.remove() still dissolves after the agent leaves the model."""
     model = Model()
     meta_agents = MetaAgents(model)
     member = Agent(model)

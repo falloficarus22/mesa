@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from mesa.agent import Agent, AgentSet
-from mesa.experimental.mesa_signals import ModelSignals
 
 from .backend import MembershipBackend, RelationKey, Triplet
 from .meta_agent import (
@@ -79,14 +78,11 @@ class MetaAgents:
         self.backend = backend or MembershipBackend()
         model.meta_agents = self
 
-        self.model.observe("agents", ModelSignals.AGENT_REMOVED, self._on_agent_removed)
+        self.model._register_agent_removed_hook(self._on_agent_removed)
 
-    def _on_agent_removed(self, signal) -> None:
+    def _on_agent_removed(self, agent) -> None:
         """Deactivate memberships when a live agent leaves the model."""
-        args = signal.additional_kwargs.get("args") or ()
-        if not args:
-            return
-        self.deactivate(args[0])
+        self.deactivate(agent)
 
     def _entity_id(self, entity: Hashable) -> Hashable:
         """Return the backend identity for a live entity or hashable external id."""
@@ -96,7 +92,7 @@ class MetaAgents:
         """Build a lookup from backend ids back to live model objects."""
         # TODO(perf): This rebuilds an O(N) mapping over every model agent on
         # each call. Cache the lookup instead and only rebuild it on agent add
-        # or remove calls (e.g. via AGENT_ADDED/AGENT_REMOVED signals, seeding
+        # or remove calls (e.g. via the model's agent lifecycle hooks, seeding
         # once in ``__init__``). Future optimization: bulk adds and removes.
         lookup: dict[Hashable, Any] = {}
         for entity in self.model.agents:

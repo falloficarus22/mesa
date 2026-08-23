@@ -101,3 +101,17 @@ def test_agent_remove():
 
     model.remove_all_agents()
     assert len(model.agents) == 0
+
+
+def test_agent_removed_hook():
+    """Agent removal hooks run synchronously after deregistration."""
+    model = Model()
+    removed = []
+    model._register_agent_removed_hook(removed.append)
+
+    agent = Agent(model)
+    assert removed == []
+
+    agent.remove()
+    assert removed == [agent]
+    assert agent not in model.agents
