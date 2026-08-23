@@ -5,7 +5,7 @@ import mesa
 from mesa import Agent
 from mesa.examples.advanced.alliance_formation.agents import AllianceAgent
 from mesa.experimental.scenarios import Scenario
-from mesa.meta_agents import MetaAgents, find_combinations
+from mesa.meta_agents import MetaAgents
 
 
 class AllianceScenario(Scenario):
@@ -165,7 +165,7 @@ class MultiLevelAllianceModel(mesa.Model):
             if (
                 len(similar_agents) > 1
             ):  # only form alliances if there are more than 1 agent
-                combinations = find_combinations(
+                combinations = self.meta_agents.find_combinations(
                     self,
                     similar_agents,
                     size=2,

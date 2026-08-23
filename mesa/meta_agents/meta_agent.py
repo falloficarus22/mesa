@@ -1,13 +1,12 @@
-"""Internal meta-agent group object and discovery helpers.
+"""Internal meta-agent group object.
 
 Meta-agents are agents composed of other agents. Memberships are tracked by
 the model's membership manager (``model.meta_agents``). This module holds the
-internal group ``Agent`` subclass and combination-discovery helpers.
+internal group ``Agent`` subclass.
 """
 
 from __future__ import annotations
 
-import itertools
 from collections.abc import Callable, Iterable
 from types import MethodType
 from typing import Any
@@ -35,68 +34,6 @@ def _normalize_agent_bases(
     if isinstance(mesa_agent_type, tuple):
         return mesa_agent_type
     return (mesa_agent_type,)
-
-
-def evaluate_combination(
-    candidate_group: tuple[Agent, ...],
-    model,
-    evaluation_func: Callable[[tuple[Agent, ...]], float] | None,
-) -> tuple[tuple[Agent, ...], float] | None:
-    """Evaluate a candidate meta-agent group with a user-supplied function."""
-    if evaluation_func is None:
-        return None
-    return candidate_group, evaluation_func(candidate_group)
-
-
-def find_combinations(
-    model,
-    group: Iterable,
-    size: int | tuple[int, int] = (2, 5),
-    evaluation_func: Callable[[tuple[Agent, ...]], float] | None = None,
-    filter_func: Callable[
-        [list[tuple[tuple[Agent, ...], float]]], list[tuple[tuple[Agent, ...], float]]
-    ]
-    | None = None,
-) -> list[tuple[tuple[Agent, ...], float]]:
-    """Find candidate agent groups and score them with ``evaluation_func``.
-
-    The helper discovers potential meta-agents before creating them. It
-    deliberately does not mutate model or membership state.
-
-    Args:
-        model: The model instance.
-        group: The set of agents to find combinations in.
-        size: The size or range of sizes for combinations. Defaults to (2, 5).
-        evaluation_func: The function to evaluate combinations. Defaults to None.
-        filter_func: Allows the user to specify how agents are filtered to form groups.
-          Defaults to None.
-
-    Returns:
-        List: The list of valuable combinations, in a tuple first agentset of valuable combination  and then the value of
-        the combination.
-    """
-    if isinstance(size, int):
-        size_range = range(size, size + 1)
-    else:
-        min_size, max_size = size
-        size_range = range(min_size, max_size + 1)
-
-    combinations = []
-    for candidate_group in itertools.chain.from_iterable(
-        itertools.combinations(group, combination_size)
-        for combination_size in size_range
-    ):
-        evaluation_result = evaluate_combination(
-            candidate_group, model, evaluation_func
-        )
-        if evaluation_result is not None:
-            _evaluated_group, result = evaluation_result
-            if result is not None:
-                combinations.append(evaluation_result)
-
-    if combinations and filter_func is not None:
-        return filter_func(combinations)
-    return combinations
 
 
 def extract_class(agents_by_type: dict, new_agent_class: object) -> type[Agent] | None:
@@ -248,7 +185,5 @@ class MetaAgent(Agent):
 
 
 __all__ = [
-    "evaluate_combination",
     "extract_class",
-    "find_combinations",
 ]

@@ -31,7 +31,21 @@ model.meta_agents.add_member("Team", carol)
 model.meta_agents.members_of("Team")
 ```
 
-`find_combinations` and `evaluate_combination` remain as discovery helpers and are now imported from `mesa.meta_agents`. The warehouse example in [mesa-examples](https://github.com/mesa/mesa-examples) still uses the old factory and needs a matching update.
+`find_combinations` and `evaluate_combination` remain as discovery helpers but are now staticmethods on `MetaAgents`; the module-level imports are gone. Call them through the membership manager.
+
+```python
+# Old
+from mesa.experimental.meta_agents import find_combinations
+
+combinations = find_combinations(model, agents, size=2, evaluation_func=score)
+
+# New
+combinations = model.meta_agents.find_combinations(
+    model, agents, size=2, evaluation_func=score
+)
+```
+
+The warehouse example in [mesa-examples](https://github.com/mesa/mesa-examples) still uses the old factory and needs a matching update.
 
 ### Simulator classes removed
 The experimental `Simulator`, `ABMSimulator`, and `DEVSimulator` classes, and the `mesa.experimental.devs` package that contained them, have been removed outright. They were deprecated in Mesa 3.5.0 (see "Event scheduling and time advancement" under the Mesa 3.5.0 section below) in favor of scheduling methods defined directly on `Model`. The lower-level primitives they were built on — `Event`, `EventGenerator`, `EventList`, `Priority`, `Schedule` — are unaffected and still live in the stable `mesa.time` module.

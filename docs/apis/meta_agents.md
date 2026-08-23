@@ -47,6 +47,7 @@ model.meta_agents.groups_of(alice)                    # which groups an agent be
 model.meta_agents.query_memberships(alice)            # full membership snapshot for one entity
 model.meta_agents.at_level(1, root=team)              # walk nested levels
 model.meta_agents.dissolve(team)                      # dissolve a group
+model.meta_agents.find_combinations(model, [alice, bob], evaluation_func=score)  # candidate groups
 ```
 
 ```{eval-rst}
