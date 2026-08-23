@@ -362,7 +362,6 @@ class MetaAgents:
     @staticmethod
     def evaluate_combination(
         candidate_group: tuple[Agent, ...],
-        model,
         evaluation_func: Callable[[tuple[Agent, ...]], float] | None,
     ) -> tuple[tuple[Agent, ...], float] | None:
         """Evaluate a candidate meta-agent group with a user-supplied function."""
@@ -372,7 +371,6 @@ class MetaAgents:
 
     @staticmethod
     def find_combinations(
-        model,
         group: Iterable,
         size: int | tuple[int, int] = (2, 5),
         evaluation_func: Callable[[tuple[Agent, ...]], float] | None = None,
@@ -388,7 +386,6 @@ class MetaAgents:
         deliberately does not mutate model or membership state.
 
         Args:
-            model: The model instance.
             group: The set of agents to find combinations in.
             size: The size or range of sizes for combinations. Defaults to (2, 5).
             evaluation_func: The function to evaluate combinations. Defaults to None.
@@ -411,7 +408,7 @@ class MetaAgents:
             for combination_size in size_range
         ):
             evaluation_result = MetaAgents.evaluate_combination(
-                candidate_group, model, evaluation_func
+                candidate_group, evaluation_func
             )
             if evaluation_result is not None:
                 _evaluated_group, result = evaluation_result

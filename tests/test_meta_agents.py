@@ -124,12 +124,12 @@ def test_evaluate_combination(setup_agents):
     def evaluation_func(agent_set):
         return len(agent_set)
 
-    result = MetaAgents.evaluate_combination(tuple(agents), model, evaluation_func)
+    result = MetaAgents.evaluate_combination(tuple(agents), evaluation_func)
     assert result is not None
     assert result[1] == len(agents)
 
     instance_result = model.meta_agents.evaluate_combination(
-        tuple(agents), model, evaluation_func
+        tuple(agents), evaluation_func
     )
     assert instance_result == result
 
@@ -145,7 +145,6 @@ def test_find_combinations(setup_agents):
         return [combo for combo in combinations if combo[1] > 2]
 
     combinations = model.meta_agents.find_combinations(
-        model,
         set(agents),
         size=(2, 4),
         evaluation_func=evaluation_func,
@@ -164,7 +163,6 @@ def test_find_combinations_allows_zero_value(setup_agents):
         return 0.0
 
     combinations = model.meta_agents.find_combinations(
-        model,
         agents,
         size=2,
         evaluation_func=evaluation_func,
@@ -175,13 +173,12 @@ def test_find_combinations_allows_zero_value(setup_agents):
 
 def test_find_combinations_inclusive_tuple_size_bounds(setup_agents):
     """Tuple size bounds are inclusive and support equal bounds."""
-    model, agents = setup_agents
+    _model, agents = setup_agents
 
     def evaluation_func(agent_group):
         return len(agent_group)
 
     combinations = MetaAgents.find_combinations(
-        model,
         agents,
         size=(2, 2),
         evaluation_func=evaluation_func,
@@ -194,7 +191,7 @@ def test_find_combinations_without_evaluation_func(setup_agents):
     """No evaluation function yields no combinations."""
     model, _agents = setup_agents
     result = model.meta_agents.find_combinations(
-        model, model.agents, size=2, evaluation_func=None
+        model.agents, size=2, evaluation_func=None
     )
     assert result == []
 

@@ -166,7 +166,6 @@ class MultiLevelAllianceModel(mesa.Model):
                 len(similar_agents) > 1
             ):  # only form alliances if there are more than 1 agent
                 combinations = self.meta_agents.find_combinations(
-                    self,
                     similar_agents,
                     size=2,
                     evaluation_func=self.calculate_shapley_value,

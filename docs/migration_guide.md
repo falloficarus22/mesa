@@ -41,7 +41,7 @@ combinations = find_combinations(model, agents, size=2, evaluation_func=score)
 
 # New
 combinations = model.meta_agents.find_combinations(
-    model, agents, size=2, evaluation_func=score
+    agents, size=2, evaluation_func=score
 )
 ```
 
