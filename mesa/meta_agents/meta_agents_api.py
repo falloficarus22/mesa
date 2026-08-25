@@ -165,7 +165,7 @@ class MetaAgents:
         self,
         new_agent_class: str,
         agents: Iterable[Any],
-        mesa_agent_type: type[Agent] | None,
+        mesa_agent_type: type[Agent] | None = None,
         meta_attributes: dict[str, Any] | None = None,
         meta_methods: dict[str, Callable] | None = None,
         relation: RelationKey = "member",
@@ -194,7 +194,9 @@ class MetaAgents:
                 new group with this name is created.
             agents: Initial members of the group.
             mesa_agent_type: Mesa ``Agent`` class used as the base class of the
-                group agent. Ignored when an existing group is reused.
+                group agent. Defaults to ``Agent`` when omitted. Ignored when
+                an existing group is reused. Pass a custom ``Agent`` subclass
+                to give the group its own behavior.
             meta_attributes: Attributes to set on the group. When a group is
                 reused, these are set on the existing group.
             meta_methods: Methods to bind to the group. When a group is
@@ -210,14 +212,15 @@ class MetaAgents:
             The group agent (newly created or existing).
 
         Examples:
-            Create a new team with two members:
+            Create a new team with two members (the group agent defaults to a
+            plain ``Agent`` subclass):
 
-            >>> team = model.meta_agents.create("Team", [alice, bob], Agent)
+            >>> team = model.meta_agents.create("Team", [alice, bob])
 
             Add carol to the same team. Reuse requires at least one given
             agent to already be in the group, so include an existing member:
 
-            >>> team2 = model.meta_agents.create("Team", [carol, alice], Agent)
+            >>> team2 = model.meta_agents.create("Team", [carol, alice])
             >>> assert team is team2
 
             This is the same as adding carol using ``add_member`` (more

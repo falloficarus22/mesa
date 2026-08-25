@@ -32,6 +32,20 @@ def test_meta_agents_create_records_memberships():
     assert view.memberships[0].group is meta_agent
 
 
+def test_meta_agents_create_defaults_mesa_agent_type_to_agent():
+    """Omitting mesa_agent_type should default to a plain Agent subclass."""
+    model = Model()
+    meta_agents = MetaAgents(model)
+    agent = Agent(model)
+
+    meta_agent = meta_agents.create("Group", [agent])
+
+    assert isinstance(meta_agent, Agent)
+    assert meta_agents.backend.as_triplets() == {
+        (agent.unique_id, meta_agent.unique_id, "member"),
+    }
+
+
 def test_meta_agent_has_one_membership_manager():
     """A model can have only one membership manager."""
     model = Model()

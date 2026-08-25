@@ -39,7 +39,7 @@ model.meta_agents = MetaAgents(model)
 
 alice = Agent(model)
 bob = Agent(model)
-team = model.meta_agents.create("Team", [alice, bob], Agent)  # create a group of agents
+team = model.meta_agents.create("Team", [alice, bob])  # create a group of agents
 
 model.meta_agents.add_member("Team", Agent(model))    # add members
 model.meta_agents.members_of("Team")                  # who belongs to a group
@@ -60,23 +60,26 @@ members therefore creates a second, distinct group with the same name (which
 makes name-based lookups such as `members_of("Team")` ambiguous). To force a
 new group, use a unique class name (e.g., append a timestamp or UUID).
 
+The group agent defaults to a plain `Agent` subclass; pass `mesa_agent_type`
+to base it on a custom `Agent` subclass instead.
+
 ```python
-team = model.meta_agents.create("Team", [alice, bob], Agent)
+team = model.meta_agents.create("Team", [alice, bob])
 
 # reuse: alice is already in the group, so carol is added to the same team
-team2 = model.meta_agents.create("Team", [carol, alice], Agent)
+team2 = model.meta_agents.create("Team", [carol, alice])
 assert team is team2
 
 # more explicit alternative:
 model.meta_agents.add_member("Team", carol)
 
 # same name, no overlapping members -> a second, distinct group
-other_team = model.meta_agents.create("Team", [dave], Agent)
+other_team = model.meta_agents.create("Team", [dave])
 assert other_team is not team
 
 # unique names force distinct groups
-team_a = model.meta_agents.create("Team_2026_A", [alice], Agent)
-team_b = model.meta_agents.create("Team_2026_B", [dave], Agent)
+team_a = model.meta_agents.create("Team_2026_A", [alice])
+team_b = model.meta_agents.create("Team_2026_B", [dave])
 ```
 
 ```{eval-rst}

@@ -25,7 +25,7 @@ list(group.agents)
 from mesa.meta_agents import MetaAgents
 
 model.meta_agents = MetaAgents(model)
-model.meta_agents.create("Team", [alice, bob], Agent)
+model.meta_agents.create("Team", [alice, bob])
 model.meta_agents.groups_of(alice)
 model.meta_agents.add_member("Team", carol)
 model.meta_agents.members_of("Team")
