@@ -12,8 +12,8 @@ def test_overlapping_meta_agents():
     agent2 = Agent(model)
     agent3 = Agent(model)
 
-    group1 = meta_agents.create("Group1", {agent1, agent2}, Agent)
-    group2 = meta_agents.create("Group2", {agent1, agent3}, Agent)
+    group1 = meta_agents.create("Group1", {agent1, agent2})
+    group2 = meta_agents.create("Group2", {agent1, agent3})
 
     assert set(meta_agents.groups_of(agent1)) == {group1, group2}
     assert set(meta_agents.groups_of(agent2)) == {group1}
@@ -25,8 +25,8 @@ def test_remove_from_multiple_groups():
     model = Model()
     meta_agents = MetaAgents(model)
     agent1 = Agent(model)
-    group1 = meta_agents.create("Group1", {agent1}, Agent)
-    group2 = meta_agents.create("Group2", {agent1}, Agent)
+    group1 = meta_agents.create("Group1", {agent1})
+    group2 = meta_agents.create("Group2", {agent1})
 
     assert len(meta_agents.groups_of(agent1)) == 2
 
@@ -49,8 +49,8 @@ def test_create_independent_groups_with_overlap():
     agent1 = Agent(model)
     agent2 = Agent(model)
 
-    meta1 = meta_agents.create("GroupA", [agent1], Agent)
-    meta2 = meta_agents.create("GroupB", [agent1, agent2], Agent)
+    meta1 = meta_agents.create("GroupA", [agent1])
+    meta2 = meta_agents.create("GroupB", [agent1, agent2])
 
     assert meta1 is not meta2
     assert meta1.__class__.__name__ == "GroupA"

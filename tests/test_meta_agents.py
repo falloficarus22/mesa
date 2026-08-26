@@ -42,7 +42,6 @@ def test_create_records_attributes_and_methods(setup_agents):
     meta_agent = model.meta_agents.create(
         "MetaAgentClass",
         agents,
-        Agent,
         meta_attributes={"attribute1": "value1"},
         meta_methods={"function1": lambda self: "function1"},
     )
@@ -57,14 +56,12 @@ def test_create_reuses_existing_class_for_new_instance(setup_agents):
     meta_agent = model.meta_agents.create(
         "MetaAgentClass",
         [agents[0], agents[2]],
-        Agent,
         meta_attributes={"attribute1": "value1"},
         meta_methods={"function1": lambda self: "function1"},
     )
     meta_agent2 = model.meta_agents.create(
         "MetaAgentClass",
         [agents[1], agents[3]],
-        Agent,
         meta_attributes={"attribute2": "value2"},
         meta_methods={"function2": lambda self: "function2"},
     )
@@ -81,14 +78,12 @@ def test_create_adds_to_existing_group_of_same_class(setup_agents):
     meta_agent1 = model.meta_agents.create(
         "MetaAgentClass",
         [agents[0], agents[3]],
-        Agent,
         meta_attributes={"attribute1": "value1"},
         meta_methods={"function1": lambda self: "function1"},
     )
     reused = model.meta_agents.create(
         "MetaAgentClass",
         [agents[1], agents[0], agents[2]],
-        Agent,
     )
     assert reused is meta_agent1
     assert set(model.meta_agents.members_of(meta_agent1)) == {
@@ -107,7 +102,6 @@ def test_create_registers_group_on_model(setup_agents):
     meta_agent = model.meta_agents.create(
         "MetaAgentClass",
         agents,
-        Agent,
         meta_attributes={"attribute1": "value1"},
         meta_methods={"function1": lambda self: "function1"},
     )

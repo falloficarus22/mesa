@@ -14,7 +14,7 @@ def test_meta_agents_create_records_memberships():
     agent_1 = Agent(model)
     agent_2 = Agent(model)
 
-    meta_agent = meta_agents.create("Group", [agent_1, agent_2], Agent)
+    meta_agent = meta_agents.create("Group", [agent_1, agent_2])
 
     assert meta_agents.backend.as_triplets() == {
         (agent_1.unique_id, meta_agent.unique_id, "member"),
@@ -62,7 +62,7 @@ def test_members_of_and_groups_of():
     meta_agents = MetaAgents(model)
     agent_1 = Agent(model)
     agent_2 = Agent(model)
-    group = meta_agents.create("Group", [agent_1], Agent)
+    group = meta_agents.create("Group", [agent_1])
 
     meta_agents.add_member(group, agent_2)
     assert set(meta_agents.members_of(group)) == {agent_1, agent_2}
@@ -87,7 +87,6 @@ def test_create_memberships_overrides_agents_list():
     group = meta_agents.create(
         "Group",
         [listed],
-        Agent,
         memberships=[(actual, "member")],
     )
     assert listed not in meta_agents.members_of(group)
@@ -105,7 +104,7 @@ def test_member_remove_deactivates_memberships():
     meta_agents = MetaAgents(model)
     member = Agent(model)
     other = Agent(model)
-    group = meta_agents.create("Group", [member, other], Agent)
+    group = meta_agents.create("Group", [member, other])
     member.remove()
     assert meta_agents.backend.groups_of(member) == set()
     assert member not in meta_agents.members_of(group)
@@ -120,7 +119,7 @@ def test_meta_agent_remove_still_dissolves_after_agent_removal():
     model = Model()
     meta_agents = MetaAgents(model)
     member = Agent(model)
-    group = meta_agents.create("Group", [member], Agent)
+    group = meta_agents.create("Group", [member])
     group.remove()
     assert meta_agents.backend.as_triplets() == set()
     assert group not in model.agents
@@ -134,7 +133,7 @@ def test_add_and_remove_member_by_group_name():
     alice = Agent(model)
     bob = Agent(model)
     carol = Agent(model)
-    team = meta_agents.create("Team", [alice, bob], Agent)
+    team = meta_agents.create("Team", [alice, bob])
 
     meta_agents.add_member("Team", carol)
     assert set(meta_agents.members_of("Team")) == {alice, bob, carol}
@@ -146,7 +145,7 @@ def test_add_and_remove_member_by_group_name():
     with pytest.raises(ValueError, match="No group named"):
         meta_agents.add_member("Missing", carol)
 
-    meta_agents.create("Team", [Agent(model)], Agent)
+    meta_agents.create("Team", [Agent(model)])
     with pytest.raises(ValueError, match="Ambiguous group name"):
         meta_agents.add_member("Team", carol)
 
@@ -156,7 +155,7 @@ def test_add_and_remove_member_by_unique_id():
     model = Model()
     meta_agents = MetaAgents(model)
     member = Agent(model)
-    group = meta_agents.create("Group", [], Agent)
+    group = meta_agents.create("Group", [])
     meta_agents.add_member(group, member.unique_id)
     assert member in meta_agents.members_of(group)
     assert group in meta_agents.groups_of(member)
@@ -173,8 +172,8 @@ def test_remove_member_preserves_overlapping_memberships():
     meta_agents = MetaAgents(model)
     agent = Agent(model)
     partner = Agent(model)
-    group_one = meta_agents.create("GroupOne", [agent, partner], Agent)
-    group_two = meta_agents.create("GroupTwo", [agent], Agent)
+    group_one = meta_agents.create("GroupOne", [agent, partner])
+    group_two = meta_agents.create("GroupTwo", [agent])
 
     assert len(meta_agents.groups_of(agent)) == 2
 
@@ -194,8 +193,8 @@ def test_dissolve_cleans_only_target_group():
     agent_1 = Agent(model)
     agent_2 = Agent(model)
     agent_3 = Agent(model)
-    group_one = meta_agents.create("GroupOne", [agent_1, agent_2], Agent)
-    group_two = meta_agents.create("GroupTwo", [agent_1, agent_3], Agent)
+    group_one = meta_agents.create("GroupOne", [agent_1, agent_2])
+    group_two = meta_agents.create("GroupTwo", [agent_1, agent_3])
 
     snapshot = meta_agents.dissolve(group_one)
 
@@ -218,7 +217,7 @@ def test_deactivate_detaches_all_memberships_without_removing_entity():
     meta_agents = MetaAgents(model)
     agent_1 = Agent(model)
     agent_2 = Agent(model)
-    group = meta_agents.create("Group", [agent_1, agent_2], Agent)
+    group = meta_agents.create("Group", [agent_1, agent_2])
 
     snapshot = meta_agents.deactivate(agent_1)
 
@@ -234,7 +233,7 @@ def test_dissolve_after_member_already_removed():
     model = Model()
     meta_agents = MetaAgents(model)
     agent = Agent(model)
-    group = meta_agents.create("Group", [agent], Agent)
+    group = meta_agents.create("Group", [agent])
     agent.remove()
     assert meta_agents.backend.as_triplets() == set()
     group.remove()
@@ -250,10 +249,10 @@ def _four_level_hierarchy():
     person_a = Agent(model)
     person_b = Agent(model)
     person_c = Agent(model)
-    household = meta_agents.create("Household", [person_a, person_b], Agent)
-    city = meta_agents.create("City", [household, person_c], Agent)
-    region = meta_agents.create("Region", [city], Agent)
-    world = meta_agents.create("World", [region], Agent)
+    household = meta_agents.create("Household", [person_a, person_b])
+    city = meta_agents.create("City", [household, person_c])
+    region = meta_agents.create("Region", [city])
+    world = meta_agents.create("World", [region])
 
     return (
         model,

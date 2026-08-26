@@ -2,7 +2,6 @@ import networkx as nx
 import numpy as np
 
 import mesa
-from mesa import Agent
 from mesa.examples.advanced.alliance_formation.agents import AllianceAgent
 from mesa.experimental.scenarios import Scenario
 from mesa.meta_agents import MetaAgents
@@ -183,7 +182,6 @@ class MultiLevelAllianceModel(mesa.Model):
                     meta = self.meta_agents.create(
                         class_name,
                         alliance_members,
-                        Agent,
                         meta_attributes={
                             "level": attributes[2],
                             "power": attributes[0],

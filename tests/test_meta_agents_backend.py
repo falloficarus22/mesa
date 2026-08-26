@@ -100,7 +100,7 @@ def test_backend_uses_unique_ids_for_mesa_agents():
     model = Model()
     meta_agents = MetaAgents(model)
     agent = Agent(model)
-    group = meta_agents.create("Group", [agent], Agent)
+    group = meta_agents.create("Group", [agent])
 
     assert meta_agents.backend.as_triplets() == {
         (agent.unique_id, group.unique_id, "member")

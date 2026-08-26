@@ -165,7 +165,7 @@ class MetaAgents:
         self,
         new_agent_class: str,
         agents: Iterable[Any],
-        mesa_agent_type: type[Agent] | None = None,
+        mesa_agent_type: type[Agent] | None = Agent,
         meta_attributes: dict[str, Any] | None = None,
         meta_methods: dict[str, Callable] | None = None,
         relation: RelationKey = "member",
@@ -232,13 +232,13 @@ class MetaAgents:
             With the same class name but no overlapping members, a second,
             distinct group is created:
 
-            >>> other_team = model.meta_agents.create("Team", [dave], Agent)
+            >>> other_team = model.meta_agents.create("Team", [dave])
             >>> assert other_team is not team
 
             Force new groups by using unique names:
 
-            >>> team_a = model.meta_agents.create("Team_2026_A", [...], Agent)
-            >>> team_b = model.meta_agents.create("Team_2026_B", [...], Agent)
+            >>> team_a = model.meta_agents.create("Team_2026_A", [...])
+            >>> team_b = model.meta_agents.create("Team_2026_B", [...])
         """
         member_relations = list(memberships) if memberships is not None else None
         if member_relations is not None:
