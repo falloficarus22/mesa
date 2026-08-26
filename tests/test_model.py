@@ -115,8 +115,8 @@ def test_agent_removed_hook():
     agent.remove()
     assert removed == [agent]
     assert agent not in model.agents
-    
-    
+
+
 def test_agents_by_type_keeps_empty_bucket():
     """Removing all agents of a type keeps its empty bucket in agents_by_type.
 
