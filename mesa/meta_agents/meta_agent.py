@@ -101,6 +101,8 @@ def _build_meta_agent_class(
     )
 
 
+# TODO(typing): Replace the dynamic creation path's Any return with a
+# statically checkable MetaAgent or protocol type.
 def _create_meta_agent_instance(
     model: Any,
     new_agent_class: str,
