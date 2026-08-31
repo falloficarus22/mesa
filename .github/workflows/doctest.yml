@@ -1,0 +1,43 @@
+name: doctest
+
+on:
+  push:
+    branches:
+      - main
+      - release**
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.head_ref || github.run_id }}"
+  cancel-in-progress: true
+
+jobs:
+  doctest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+          cache: "pip"
+      - name: Install uv
+        run: pip install uv
+      - name: Install Mesa and dependencies
+        run: uv pip install --system .[dev]
+      - name: Run doctests
+        # Separate from unit tests so a rotten docstring is flagged cleanly.
+        # ELLIPSIS and NORMALIZE_WHITESPACE come from pyproject.toml [tool.pytest.ini_options].
+        # Scope: mesa + mesa/examples (per #3825). st_app.py needs streamlit, so ignore those files.
+        run: |
+          pytest --doctest-modules mesa \
+            --ignore=mesa/examples/basic/boltzmann_wealth_model/st_app.py \
+            --ignore=mesa/examples/basic/conways_game_of_life/st_app.py -v

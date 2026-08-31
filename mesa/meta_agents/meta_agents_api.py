@@ -215,30 +215,30 @@ class MetaAgents:
             Create a new team with two members (the group agent defaults to a
             plain ``Agent`` subclass):
 
-            >>> team = model.meta_agents.create("Team", [alice, bob])
+            >>> team = model.meta_agents.create("Team", [alice, bob])  # doctest: +SKIP
 
             Add carol to the same team. Reuse requires at least one given
             agent to already be in the group, so include an existing member:
 
-            >>> team2 = model.meta_agents.create("Team", [carol, alice])
-            >>> assert team is team2
+            >>> team2 = model.meta_agents.create("Team", [carol, alice])  # doctest: +SKIP
+            >>> assert team is team2  # doctest: +SKIP
 
             This is the same as adding carol using ``add_member`` (more
             explicit):
 
-            >>> model.meta_agents.add_member("Team", carol)
-            >>> assert carol in model.meta_agents.members_of("Team")
+            >>> model.meta_agents.add_member("Team", carol)  # doctest: +SKIP
+            >>> assert carol in model.meta_agents.members_of("Team")  # doctest: +SKIP
 
             With the same class name but no overlapping members, a second,
             distinct group is created:
 
-            >>> other_team = model.meta_agents.create("Team", [dave])
-            >>> assert other_team is not team
+            >>> other_team = model.meta_agents.create("Team", [dave])  # doctest: +SKIP
+            >>> assert other_team is not team  # doctest: +SKIP
 
             Force new groups by using unique names:
 
-            >>> team_a = model.meta_agents.create("Team_2026_A", [...])
-            >>> team_b = model.meta_agents.create("Team_2026_B", [...])
+            >>> team_a = model.meta_agents.create("Team_2026_A", [...])  # doctest: +SKIP
+            >>> team_b = model.meta_agents.create("Team_2026_B", [...])  # doctest: +SKIP
         """
         member_relations = list(memberships) if memberships is not None else None
         if member_relations is not None:
@@ -387,7 +387,7 @@ class MetaAgents:
 
         Examples:
         --------
-        >>> model.meta_agents.at_level(4, root=world)
+        >>> model.meta_agents.at_level(4, root=world)  # doctest: +SKIP
         """
         if level < 0:
             raise ValueError(f"level must be non-negative, got {level}")
